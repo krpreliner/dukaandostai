@@ -12,8 +12,30 @@ class ExecutionService:
         self.repo = BusinessRepository(db)
         self.state_mgr = StateManager(db)
 
-    def start_worker(self, custom_target: Optional[float] = None) -> Dict[str, Any]:
+    def start_worker(self, custom_target: Optional[float] = None, force_new: bool = False, store_id: str = "STORE_001") -> Dict[str, Any]:
         target = custom_target if custom_target is not None else settings.TARGET_NET_INCOME
+
+        # Check if an existing execution is waiting for approval
+        latest_exec = self.repo.get_latest_execution(store_id=store_id)
+        if latest_exec and not force_new:
+            graph = build_dukaandost_graph()
+            config = {"configurable": {"thread_id": latest_exec.thread_id}}
+            snapshot = graph.get_state(config)
+            is_paused = len(snapshot.tasks) > 0 if snapshot else False
+
+            if is_paused or latest_exec.status == "WAITING FOR APPROVAL":
+                # Return existing execution awaiting approval rather than creating duplicate orphaned thread
+                return {
+                    "execution_id": latest_exec.execution_id,
+                    "thread_id": latest_exec.thread_id,
+                    "status": "WAITING FOR APPROVAL",
+                    "is_interrupted": True,
+                    "message": "An execution is currently waiting for human approval. Please approve or reject pending tasks before starting a new run.",
+                    "current_agent": latest_exec.current_agent,
+                    "current_task": latest_exec.current_task,
+                    "simulated_income": latest_exec.simulated_income
+                }
+
         exec_id = f"EXEC_{uuid.uuid4().hex[:8].upper()}"
         thread_id = exec_id
 
@@ -37,6 +59,7 @@ class ExecutionService:
 
         # Initialize DB ExecutionRecord
         self.repo.create_or_update_execution({
+            "store_id": store_id,
             "execution_id": exec_id,
             "thread_id": thread_id,
             "status": "ANALYSING",
@@ -55,7 +78,6 @@ class ExecutionService:
         try:
             graph.invoke(initial_state, config)
         except Exception as e:
-            # If unexpected error occurs
             self.repo.log_audit("GRAPH_ERROR", "Supervisor", str(e), execution_id=exec_id)
 
         # Check state from checkpointer
@@ -134,6 +156,7 @@ class ExecutionService:
             ],
             "pending_approvals": [
                 {
+                    "id": a.id,
                     "task_id": a.task_id,
                     "action_description": a.action_description,
                     "requesting_agent": a.requesting_agent,
@@ -149,12 +172,14 @@ class ExecutionService:
             ],
             "failures": [
                 {
+                    "id": f.id,
                     "task_id": f.task_id,
                     "agent_name": f.agent_name,
                     "error_description": f.error_description,
                     "root_cause": f.root_cause,
                     "recovery_status": f.recovery_status,
-                    "retry_count": f.retry_count
+                    "retry_count": f.retry_count,
+                    "timestamp": f.timestamp.isoformat() if f.timestamp else None
                 }
                 for f in failures
             ]

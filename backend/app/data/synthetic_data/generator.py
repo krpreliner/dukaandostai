@@ -1,7 +1,11 @@
 import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from app.database.models import Customer, Product, Transaction, Expense
+from app.database.models import (
+    Customer, Product, Transaction, Expense,
+    Store, User, StoreMember, AIProviderSetting, IntegrationSetting
+)
+from app.auth.security import hash_password
 
 # Seed for reproducible synthetic generation
 RANDOM_SEED = 42
@@ -270,18 +274,82 @@ def generate_transactions(customers: List[Dict[str, Any]], products: List[Dict[s
 
 def seed_database(db_session, force_reset: bool = False):
     """
-    Populates SQLite database with validated synthetic records.
+    Populates database with validated multi-tenant synthetic records.
     """
-    # Check if data already exists
-    existing_cust = db_session.query(Customer).first()
+    # 1. Seed Store
+    store = db_session.query(Store).filter_by(store_id="STORE_001").first()
+    if not store:
+        store = Store(
+            store_id="STORE_001",
+            name="Sharma General Store",
+            location="Ranchi, Jharkhand",
+            owner_name="Sharma Ji",
+            currency="INR",
+            initial_net_income=8000.0,
+            target_net_income=10000.0,
+            current_net_income=8000.0,
+            simulated_net_income=8000.0
+        )
+        db_session.add(store)
+        db_session.commit()
+
+    # 2. Seed Default Owner User
+    user = db_session.query(User).filter_by(email="owner@sharmastore.com").first()
+    if not user:
+        user = User(
+            email="owner@sharmastore.com",
+            password_hash=hash_password("SharmaStore2026!"),
+            full_name="Sharma Ji",
+            is_active=True
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+
+    # 3. Seed Membership
+    membership = db_session.query(StoreMember).filter_by(user_id=user.id, store_id="STORE_001").first()
+    if not membership:
+        membership = StoreMember(user_id=user.id, store_id="STORE_001", role="OWNER")
+        db_session.add(membership)
+        db_session.commit()
+
+    # 4. Seed Default AI Provider Settings
+    providers = [
+        {"provider_name": "deterministic", "model_name": "local-deterministic-v1", "is_enabled": True, "is_primary": True, "is_fallback": False},
+        {"provider_name": "openai", "model_name": "gpt-4o-mini", "is_enabled": False, "is_primary": False, "is_fallback": True},
+        {"provider_name": "gemini", "model_name": "gemini-2.0-flash", "is_enabled": False, "is_primary": False, "is_fallback": False},
+        {"provider_name": "groq", "model_name": "llama-3.3-70b-versatile", "is_enabled": False, "is_primary": False, "is_fallback": False},
+        {"provider_name": "ollama", "model_name": "llama3", "is_enabled": False, "is_primary": False, "is_fallback": False},
+    ]
+    for p in providers:
+        existing = db_session.query(AIProviderSetting).filter_by(store_id="STORE_001", provider_name=p["provider_name"]).first()
+        if not existing:
+            db_session.add(AIProviderSetting(store_id="STORE_001", **p))
+    db_session.commit()
+
+    # 5. Seed Default Integration Settings
+    integrations = [
+        {"integration_type": "google_sheets", "is_enabled": False, "status": "NOT CONFIGURED", "config_json": '{"sheet_url": ""}'},
+        {"integration_type": "weather", "is_enabled": False, "status": "NOT CONFIGURED", "config_json": '{"city": "Ranchi"}'},
+        {"integration_type": "email", "is_enabled": False, "status": "NOT CONFIGURED", "config_json": '{"provider": "smtp"}'},
+        {"integration_type": "whatsapp", "is_enabled": False, "status": "NOT CONFIGURED", "config_json": '{"channel": "whatsapp"}'},
+    ]
+    for ig in integrations:
+        existing_ig = db_session.query(IntegrationSetting).filter_by(store_id="STORE_001", integration_type=ig["integration_type"]).first()
+        if not existing_ig:
+            db_session.add(IntegrationSetting(store_id="STORE_001", **ig))
+    db_session.commit()
+
+    # Check if business data already exists
+    existing_cust = db_session.query(Customer).filter_by(store_id="STORE_001").first()
     if existing_cust and not force_reset:
         return
 
     if force_reset:
-        db_session.query(Transaction).delete()
-        db_session.query(Expense).delete()
-        db_session.query(Customer).delete()
-        db_session.query(Product).delete()
+        db_session.query(Transaction).filter_by(store_id="STORE_001").delete()
+        db_session.query(Expense).filter_by(store_id="STORE_001").delete()
+        db_session.query(Customer).filter_by(store_id="STORE_001").delete()
+        db_session.query(Product).filter_by(store_id="STORE_001").delete()
         db_session.commit()
 
     customers_data = generate_customers()
@@ -290,15 +358,19 @@ def seed_database(db_session, force_reset: bool = False):
     txns_data = generate_transactions(customers_data, products_data)
 
     for c in customers_data:
+        c["store_id"] = "STORE_001"
         db_session.add(Customer(**c))
 
     for p in products_data:
+        p["store_id"] = "STORE_001"
         db_session.add(Product(**p))
 
     for e in expenses_data:
+        e["store_id"] = "STORE_001"
         db_session.add(Expense(**e))
 
     for t in txns_data:
+        t["store_id"] = "STORE_001"
         db_session.add(Transaction(**t))
 
     db_session.commit()

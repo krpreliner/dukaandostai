@@ -62,12 +62,31 @@ class BusinessAnalystAgent:
             f"Gross margin in competitive staples is compressed; discount offers must strictly protect gross margins."
         ]
 
+        # Dynamic AI diagnostic summary from real LLM
+        ai_diagnostic_summary = ""
+        try:
+            from app.ai.provider_router import AIRouter
+            router = AIRouter(self.db)
+            prompt = (
+                f"Analyze Kirana store performance: Revenue ₹{sales['revenue']:.2f}, "
+                f"Expenses ₹{sales['operating_expenses']:.2f}, Net Income ₹{current_income:.2f}, "
+                f"Target Net Income ₹{target_income:.2f} (Gap: ₹{income_gap:.2f}). "
+                f"{customers['inactive_count']} inactive customers and {inventory['low_stock_count']} low-stock essentials. "
+                f"Provide a concise, 2-sentence retail growth diagnostic for Sharma Ji."
+            )
+            ai_res = router.route_text_generation_sync(prompt=prompt, agent_name="Business Analyst")
+            if ai_res and ai_res.get("text"):
+                ai_diagnostic_summary = ai_res["text"].strip()
+        except Exception:
+            pass
+
         return {
             "current_income": current_income,
             "target_income": target_income,
             "income_gap": income_gap,
             "revenue": sales["revenue"],
             "expenses": sales["operating_expenses"],
+            "ai_diagnostic_summary": ai_diagnostic_summary,
             "gross_profit": sales["gross_profit"],
             "gross_margin_pct": sales["gross_margin_pct"],
             "customer_insights": customers,

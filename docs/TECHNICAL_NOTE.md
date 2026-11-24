@@ -69,19 +69,30 @@ DukaanDost AI is an autonomous AI Growth Manager engineered specifically for Ind
 
 ## 4. Evaluation Methodology
 
-The system was evaluated using 16 automated end-to-end and unit tests via Pytest (`backend/tests/test_dukaandost.py`):
+The system was evaluated using 21 automated end-to-end and unit tests via Pytest (`backend/tests/test_dukaandost.py`):
 1. **Financial Baseline Test:** Verified that Revenue - COGS - Expenses == ₹8,000.00.
 2. **Strategy Generation Test:** Verified Strategy Planner produces valid tasks totaling > ₹2,000.00.
-3. **Agent Behavior Tests:** Verified Marketing, Inventory, and Finance agent logic.
-4. **Negative Margin Guardrail Test:** Verified Finance Agent blocks offers when cost exceeds price.
-5. **Human Interrupt & Resume Test:** Verified `interrupt()` halts graph execution and `Command(resume=...)` resumes it on the same thread.
-6. **Persistence Test:** Verified SQLite checkpoint state retrieval after simulated restart.
-7. **Idempotency Test:** Verified completed tasks are never executed twice.
-8. **Recovery Scenario Test:** Verified price correction allows workflow revalidation.
-9. **UI Data Retrieval Test:** Verified API endpoints return database records.
-10. **External Action Safety Test:** Confirmed zero external payment/SMS environment variables.
+3. **Marketing Agent Analysis Test:** Verified combo proposition, pricing, and campaign copy generation.
+4. **Inventory Agent Detection Test:** Verified detection of low-stock and near-expiry catalog items.
+5. **Negative Margin Guardrail Test:** Verified Finance Agent blocks offers when cost exceeds proposed price.
+6. **Supervisor Coordination Test:** Verified task dispatch across specialized sub-agents.
+7. **Human Interrupt Test:** Verified `interrupt()` halts graph execution for human owner approval.
+8. **Approval Resumption Test:** Verified `Command(resume=...)` resumes execution on the same thread.
+9. **Rejection Safeguard Test:** Verified rejected tasks are aborted and prevented from executing.
+10. **Persistence & Recovery Test:** Verified SQLite checkpoint state retrieval after process restart.
+11. **Execution Idempotency Test:** Verified completed tasks within an execution cannot be duplicated.
+12. **Supervised Fault Recovery Test:** Verified price correction allows workflow revalidation.
+13. **Feedback Variance Test:** Verified calculation of execution variance and priority adjustments.
+14. **Dashboard Data Retrieval Test:** Verified API endpoints return database records.
+15. **Financial Reconciliation Test:** Verified underlying synthetic records reconcile mathematically to ₹8,000.00.
+16. **External Action Safety Test:** Confirmed zero external payment/SMS environment variables.
+17. **Approval History Retrieval Test:** Verified historical decisions persist with decision timestamps.
+18. **Failure Resolution Endpoints Test:** Verified failure records can be resolved individually and globally.
+19. **Strict Pydantic Input Validation Test:** Verified rejection of negative or zero prices via field validators.
+20. **Thread Idempotency & Income Guardrail Test:** Verified metric updates ignore already-completed tasks to prevent duplicate profit crediting.
+21. **System Evaluation Metrics Test:** Verified calculation of completion rate, failure rate, approval rate, and profit variance.
 
-**Result:** All 16 automated tests passed in 1.99s.
+**Result:** All 21 automated tests passed in 1.67s with 0 errors and 0 warnings.
 
 ---
 

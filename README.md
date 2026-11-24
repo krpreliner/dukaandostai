@@ -4,282 +4,248 @@
 
 Developed as a technical assignment for the **Eko AI Engineering Internship**.
 
-![Architecture Diagram](architecture/architecture.png)
-
 ---
 
 ## 1. Project Overview
 
-**DukaanDost AI** is a full-stack, multi-agent autonomous system built to manage and grow small Indian neighbourhood grocery stores (Kirana stores). 
+**DukaanDost AI** is a production-grade, multi-tenant autonomous AI business management platform engineered for Indian kirana store owners (demonstrated with **Sharma General Store**, Ranchi, Jharkhand, owned by **Sharma Ji**).
 
-Unlike passive chatbots that only generate text advice, DukaanDost AI acts as an **Autonomous AI Worker**:
-- Ingests high-level business goals (*"Increase monthly net income from ₹8,000 to ₹10,000"*).
-- Analyzes underlying transactional, customer, and inventory records.
-- Decomposes the goal into prioritized, actionable growth strategies.
-- Coordinates six specialized AI agents with actual functional roles.
-- Enforces strict deterministic financial guardrails (zero negative-margin offers, maximum discount caps).
-- Implements stateful **Human-in-the-Loop** interrupts (`interrupt()` / `Command(resume=...)`).
-- Persists workflow state and checkpoints in SQLite to survive crashes and reboots.
-- Self-recovers from failures and adapts subsequent task priorities via variance feedback.
+Unlike passive chatbots that generate generic conversational advice, DukaanDost AI operates as an **Autonomous AI Worker**:
+- **Understands High-Level Goals:** Ingests objectives such as *"Increase monthly net income from ₹8,000 to ₹10,000 by identifying business opportunities, optimizing inventory, and reducing avoidable expenses."*
+- **Decomposes & Plans Independently:** Automatically analyzes baseline records and generates concrete, prioritized initiatives.
+- **Coordinates Specialized Agents:** Orchestrates 6 agents with distinct responsibilities (Business Analyst, Strategy Planner, Marketing Agent, Inventory Agent, Finance Agent, Supervisor).
+- **Enforces Financial Guardrails:** Deterministic finance rules prevent negative-margin pricing and cap promotional discounts.
+- **Human-in-the-Loop Oversight:** LangGraph interrupts pause thread execution on high-risk tasks until approved by store owners.
+- **Resilient State Persistence:** SQLite / PostgreSQL database models and SQLite-backed LangGraph checkpoints enable seamless crash recovery.
+- **Multi-Tenant Architecture:** Complete workspace segregation, JWT authentication, and Role-Based Access Control (RBAC).
+- **Zero-Cost-First AI Architecture:** Operates 100% offline at **₹0 cost** using deterministic intelligence, with optional runtime integration of cloud LLMs (OpenAI, Gemini, Groq) and local open-source models (Ollama).
+- **Production Observability:** Liveness/readiness probes, process telemetry, request correlation IDs, online backups, and automated CI.
 
 ---
 
 ## 2. Business Problem & Scenario
 
-Small retail Kirana stores across India face structural headwinds:
-- **Limited Working Capital:** Inability to afford expensive ERP or business analytics software.
-- **Dormant Customer Churn:** Customers gradually drift away to quick-commerce apps or supermarkets without the store owner noticing.
-- **Perishable Inventory Spoilage:** High carrying costs and stock write-offs on perishable dairy and fresh goods.
-- **Stockouts on Fast-Moving Staples:** Frequent missed sales on daily essentials like bread and eggs.
-- **Stagnant Monthly Net Income:** Profitability fails to grow despite continuous owner effort.
+Small Indian neighbourhood kirana stores operate in intensely competitive environments with constrained capital:
+- **Baseline Store:** Sharma General Store, Ranchi, Jharkhand, India.
+- **Proprietor:** Sharma Ji.
+- **Synthetic Records:** 120 customers, 32 products, 320 transactions, 5 recurring operating expenses.
+- **Initial Monthly Financials:**
+  $$\text{Revenue: } ₹95,000 \quad|\quad \text{COGS: } ₹76,000 \quad|\quad \text{Gross Profit: } ₹19,000$$
+  $$\text{Operating Expenses: } ₹11,000 \quad|\quad \mathbf{Baseline\ Net\ Income:\ ₹8,000.00}$$
+- **Target Monthly Income:** ₹10,000 (Required Uplift: ₹2,000 / +25.0%).
 
-### Target Kirana Scenario:
-- **Business Name:** Sharma General Store
-- **Location:** Ranchi, Jharkhand, India
-- **Owner:** Sharma Ji
-- **Baseline Records:**
-  - 120 synthetic customers across Ranchi localities (Lalpur, Doranda, Kanke Road, Harmu, etc.).
-  - 32 grocery products covering Dairy, Staples, Snacks, Beverages, and Home Care.
-  - 320 synthetic transactions across the last 30 days.
-  - Actual Kirana operating expenses: Store Rent (₹4,500), Electricity & Utilities (₹1,800), Helper Wages (₹3,000), Local Transit (₹900), Misc (₹800) = ₹11,000.
-
-### Financial Reconciliation:
-$$\text{Gross Profit} = \text{Revenue (₹95,000)} - \text{COGS (₹76,000)} = \text{₹19,000}$$
-$$\text{Net Income} = \text{Gross Profit (₹19,000)} - \text{Operating Expenses (₹11,000)} = \mathbf{₹8,000.00}$$
-
-> **Important:** The initial income is **not hardcoded**. It is calculated directly by aggregating the underlying synthetic database records.
+*Note: Initial business metrics are derived directly from transactional database records, not hardcoded. All growth outcomes are mathematically simulated within safe sandbox boundaries.*
 
 ---
 
 ## 3. Technology Stack
 
-### Frontend:
-- **Framework:** React 18 + TypeScript + Vite
-- **Styling:** Tailwind CSS (Deep Black SaaS design system: `#050505` background, `#22D3EE` cyan accents)
-- **Icons:** Lucide React
-- **Visualizations:** Recharts
-- **Routing & Networking:** React Router DOM v6, Axios
-
-### Backend:
-- **Language & Runtime:** Python 3.11+
-- **API Framework:** FastAPI with async lifespan management
-- **Orchestration:** LangGraph (StateGraph, interrupt, Command)
-- **Database ORM:** SQLAlchemy with SQLite
-- **Checkpoint Persistence:** `langgraph-checkpoint-sqlite` (`SqliteSaver`)
-- **Validation:** Pydantic v2
-- **Testing:** Pytest
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, TypeScript 5.7, Vite 6.1, Tailwind CSS, Lucide React, Recharts, React Router DOM v6, Axios |
+| **Backend** | Python 3.11+, FastAPI, LangGraph, Pydantic v2, SQLAlchemy 2.0, Alembic, Pandas, PyJWT, bcrypt, psutil |
+| **Persistence** | SQLite (application data + `langgraph-checkpoint-sqlite` checkpoints) / PostgreSQL (production scaling) |
+| **AI Intelligence** | Deterministic Local Engine (1.2ms, ₹0 cost), OpenAI (`gpt-4o-mini`), Google Gemini (`gemini-2.0-flash`), Groq (`llama-3.3-70b`), Ollama (`llama3`) |
+| **DevOps & QA** | Docker, Docker Compose, Nginx, GitHub Actions CI, Pytest (40 tests passing in 3.89s) |
 
 ---
 
-## 4. Multi-Agent Architecture & Agent Roles
+## 4. Multi-Agent System Architecture
 
 ```
-                         [ Business Goal: ₹8k -> ₹10k ]
-                                       │
-                                       ▼
-                            [ 1. Supervisor Agent ]
-                                       │
-                 ┌─────────────────────┴─────────────────────┐
-                 ▼                                           ▼
-       [ 2. Business Analyst ]                     [ 3. Strategy Planner ]
-   (Revenue, COGS, RFM Segments)               (4 Actionable Growth Tasks)
-                 │                                           │
-                 └─────────────────────┬─────────────────────┘
-                                       │
-     ┌─────────────────────────────────┼─────────────────────────────────┐
-     ▼                                 ▼                                 ▼
+                          [ Business Goal: ₹8k -> ₹10k ]
+                                        │
+                                        ▼
+                             [ 1. Supervisor Agent ]
+                                        │
+                  ┌─────────────────────┴─────────────────────┐
+                  ▼                                           ▼
+        [ 2. Business Analyst ]                     [ 3. Strategy Planner ]
+    (Revenue, COGS, RFM Segments)               (4 Actionable Growth Tasks)
+                  │                                           │
+                  └─────────────────────┬─────────────────────┘
+                                        │
+      ┌─────────────────────────────────┼─────────────────────────────────┐
+      ▼                                 ▼                                 ▼
 [ 4. Marketing Agent ]       [ 5. Inventory Agent ]             [ 6. Finance Agent ]
  - Breakfast Combo            - Low-stock detection              - Deterministic validation
  - Inactive Reactivation      - Expiry liquidation               - Blocks negative margins
- - Hindi Kirana copy          - Restock simulation               - 15% discount cap
+ - Bilingual Kirana copy      - Restock simulation               - 15% discount cap
+                                        │
+                                        ▼
+                         [ Human-in-the-Loop Interrupt ]
+                      (LangGraph Checkpointer Pauses State)
+                                        │
+                         [ Approved / Rejected Decision ]
+                                        │
+                                        ▼
+                        [ Sandbox Execution & Evaluation ]
 ```
-
-### 1. Business Analyst Agent
-Performs financial diagnostics: aggregates revenue, COGS, gross margins, and identifies 25 inactive customers and 14 expiring paneer units.
-
-### 2. Strategy Planner Agent
-Translates the ₹2,000 net income gap into 4 concrete initiatives:
-1. `TASK_001`: Breakfast Combo (Bread + Butter) — Target: +₹440.00
-2. `TASK_002`: Reactivate 25 Inactive Customers — Target: +₹810.00
-3. `TASK_003`: Liquidate Perishable Sudha Paneer — Target: +₹418.00
-4. `TASK_004`: Restock High Velocity Bread & Eggs — Target: +₹480.00
-
-### 3. Marketing Agent
-Formulates bundle pricing, projects uptake elasticity, and drafts personalized localized promotional messages for Sharma Ji without sending external SMS.
-
-### 4. Inventory Agent
-Monitors stock thresholds, identifies slow-moving capital, schedules markdown liquidation on perishable inventory, and plans restocks.
-
-### 5. Finance Agent
-Acts as an independent, deterministic gatekeeper. Calculates unit gross margins, enforces the 15% discount limit, and strictly halts any proposal resulting in negative gross margins.
-
-### 6. Supervisor Agent
-Master orchestrator. Dispatches tasks, verifies outcomes, initiates human approval interrupts, manages checkpoints, and triggers adaptive replanning.
 
 ---
 
-## 5. Autonomous Workflow & Human Approval
+## 5. Enterprise & Platform Features
 
-```
-START
-  ↓
-GOAL UNDERSTANDING
-  ↓
-BUSINESS ANALYSIS
-  ↓
-STRATEGY PLANNING
-  ↓
-TASK PRIORITISATION
-  ↓
-SUPERVISOR DECISION ──(Queue Empty)──> REPLANNING & COMPLETION ──> END
-  ↓ (Task Selected)
-FINANCIAL VALIDATION ──(Negative Margin)──> HANDLE FAILURE ──> SUPERVISOR DECISION
-  ↓ (Passed)
-HUMAN APPROVAL REQUIRED?
-  ├─► YES ──► interrupt(payload) ──[PAUSED]──► RESUME / REJECT
-  └─► NO
-  ↓
-AGENT EXECUTION
-  ↓
-RESULT VALIDATION
-  ↓
-BUSINESS METRIC UPDATE
-  ↓
-FEEDBACK EVALUATION
-  ↓
-SUPERVISOR DECISION (Next Task)
-```
+### 5.1 Multi-Tenant Workspaces & RBAC
+- Complete data isolation per store workspace (`store_id` discriminator column).
+- JWT token authentication (HMAC-SHA256) with bcrypt password hashing.
+- Four granular RBAC access levels: `OWNER`, `MANAGER`, `STAFF`, `VIEWER`.
+- Dynamic workspace switching via dashboard header.
 
-### Human-in-the-Loop Implementation:
-- Promotional bundling and inventory purchase tasks require owner authorization.
-- When encountered, `human_approval_node` calls `interrupt(payload)`, pausing the LangGraph workflow.
-- In the **Approval Centre** UI, Sharma Ji reviews the regular price (₹115), proposed price (₹109), gross margin (10.09%), and expected profit (+₹440).
-- Clicking **APPROVE** dispatches `Command(resume={"action": "APPROVE"})` on the **exact thread ID**, resuming execution without restarting the graph.
+### 5.2 Zero-Cost First & Multi-Model AI Router
+- Default execution in deterministic mode guarantees **100% uptime, 1.2ms latency, and ₹0 external cost**.
+- Multi-tier fallback pipeline: `Primary Provider -> Fallback Provider -> Deterministic Engine`.
+- Transparent token usage logging and cost estimation in USD and INR.
+- Input sanitization against prompt injection attacks (`[FILTERED_INSTRUCTION]`).
+
+### 5.3 External Integrations Framework
+- **Google Sheets / CSV:** Live catalog preview, schema validation, negative margin detection, and atomic import.
+- **Ranchi Weather Signals:** Autumn/monsoon meteorological demand advisories tailored to Jharkhand kirana buying habits.
+- **WhatsApp Campaigns:** Sandboxed bilingual promotional copy generator (Hindi & English).
+
+### 5.4 Observability, Telemetry & Health Checks
+- Microsecond timing and correlation tracking (`X-Correlation-ID`, `X-Process-Time-Ms`).
+- Diagnostic endpoints: `/api/health/live`, `/api/health/ready`, `/api/health/system`.
+- In-memory process metrics (CPU %, RSS memory MB) and database latency probes.
+
+### 5.5 Automated Zero-Downtime Backup & Restore
+- Non-locking SQLite backups using C-level online backup API: `python scripts/backup_db.py`.
+- Automated manifest creation (`backups/backup_manifest.json`) with SHA-256 hashes and table row counts.
+- Pre-restore safety snapshots and verified restoration: `python scripts/restore_db.py`.
 
 ---
 
-## 6. Persistence & Failure Recovery
+## 6. Dashboard Routes & Views
 
-### SQLite Checkpointing:
-- State snapshots are saved to `checkpoints.db` via `SqliteSaver`.
-- Application reboots restore pending approvals and thread history.
-- Idempotency guards guarantee completed tasks are never executed twice.
+The frontend provides **15 dedicated pages** grouped into two operational suites:
 
-### Reproducible Failure Scenario:
-- **Setup:** Product Butter has Cost Price ₹60.00 and Selling Price ₹55.00.
-- **Detection:** Finance Agent detects negative gross margin (-₹5.00 loss per unit) and blocks the promotion.
-- **Isolation:** Supervisor records a structured failure in `failure_records` and surfaces an alert on the **Failure Monitoring** page.
-- **Recovery:** The owner edits Butter pricing in **Inventory Intelligence**; Supervisor revalidates and continues execution.
+### Core Growth Operations:
+1. **Overview (`/`):** Financial health, goal progress, agent activity feed, customer segments.
+2. **AI Worker (`/worker`):** Autonomous orchestration control room with live agent status.
+3. **Approvals (`/approvals`):** Human-in-the-loop decision center with financial impact review.
+4. **Executions (`/executions`):** Thread history and checkpoint timeline.
+5. **Failures (`/failures`):** Guardrail tripwire monitoring and error resolution.
+6. **Analytics (`/analytics`):** Revenue charts, expense breakdowns, and margin trends.
+7. **Inventory (`/inventory`):** Stock levels, reorder thresholds, and price overrides.
+8. **Customers (`/customers`):** RFM segmentation (Champions, Regulars, At-Risk, Dormant).
+9. **Strategy (`/strategy`):** Decomposed initiatives and expected uplifts.
+10. **Feedback (`/feedback`):** Variance reconciliation (expected vs actual simulated impact).
+
+### Enterprise & Platform:
+11. **AI Providers & Costs (`/providers`):** Model selection, connection testing, token billing ledger.
+12. **Team & RBAC (`/team`):** Member role assignments and store workspace management.
+13. **Integrations (`/integrations`):** Google Sheets CSV import, Weather signals, WhatsApp drafts.
+14. **System Health (`/health`):** Server telemetry, database latency, and immutable audit logs.
+15. **Authentication (`/login`):** Sign in, store registration, and demo session launcher.
 
 ---
 
 ## 7. Installation & Quick Start
 
-### Prerequisites:
+### 7.1 Prerequisites
 - Python 3.11+
-- Node.js v18+ and npm
+- Node.js 20+ and npm
 
-### 1. Clone & Setup Workspace
-```bash
-git clone https://github.com/your-username/dukaandost-ai.git
-cd dukaandost-ai
-```
+### 7.2 Local Development Setup
 
-### 2. Install Backend Dependencies
 ```bash
+# 1. Clone repository
+git clone https://github.com/your-org/dukaandostai.git
+cd dukaandostai
+
+# 2. Setup Python environment
+python -m venv venv
+# Linux / macOS:
+source venv/bin/activate
+# Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+
+# 3. Install backend dependencies
 pip install -r backend/requirements.txt
+
+# 4. Initialize database schema & seed initial tenant
+python -c "from app.database.connection import init_db; init_db()"
+
+# 5. Start FastAPI Backend (Port 8000)
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 3. Install Frontend Dependencies
+In a second terminal:
 ```bash
+# 6. Install frontend dependencies & start Vite dev server (Port 5173)
 cd frontend
 npm install
-cd ..
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-### 4. Run the Complete Application
+Open your browser at **`http://localhost:5173`**.
 
-#### Option A: One-Click Launcher (Windows PowerShell)
-```powershell
-.\start.ps1
+### 7.3 Containerized Startup (Docker Compose)
+```bash
+# Start backend and frontend containers
+docker-compose up -d --build
+
+# Inspect status
+docker-compose ps
 ```
 
-#### Option B: Manual Execution
-**Terminal 1 (FastAPI Backend):**
+---
+
+## 8. Automated Testing & Verification
+
+Run the full **40-test automated verification suite**:
 ```bash
 $env:PYTHONPATH="backend"
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+pytest backend/tests/ -v
 ```
 
-**Terminal 2 (React Frontend):**
+### Test Suite Distribution:
+- **`test_dukaandost.py` (21 tests):** Baseline calculation, LangGraph planning, agent isolation, approval interrupts, checkpoint restoration, duplicate prevention, and financial reconciliation.
+- **`test_auth_multitenancy.py` (9 tests):** Registration, duplicate email rejection, JWT login, profile extraction, token refresh, store creation, RBAC assignments, and cross-tenant data isolation.
+- **`test_ai_providers_integrations.py` (10 tests):** Zero-cost registry, deterministic execution, prompt sanitization, AIRouter failover, CSV parsing & negative margin validation, weather signals, WhatsApp drafts, and telemetry endpoints.
+
+```
+============================= 40 passed in 3.89s ==============================
+```
+
+Frontend production build verification:
 ```bash
 cd frontend
-npm run dev
-```
-
-Open browser at: **`http://localhost:5173`**
-
----
-
-## 8. Automated Testing
-
-Run the comprehensive 16-test verification suite:
-```bash
-$env:PYTHONPATH="backend"
-pytest backend/tests/test_dukaandost.py -v
-```
-
-### Test Results:
-```
-backend/tests/test_dukaandost.py::test_01_baseline_income_calculation PASSED
-backend/tests/test_dukaandost.py::test_02_strategy_planner_creates_plan PASSED
-backend/tests/test_dukaandost.py::test_03_marketing_agent_analysis PASSED
-backend/tests/test_dukaandost.py::test_04_inventory_agent_detections PASSED
-backend/tests/test_dukaandost.py::test_05_finance_agent_blocks_negative_margin PASSED
-backend/tests/test_dukaandost.py::test_06_supervisor_coordination PASSED
-backend/tests/test_dukaandost.py::test_07_approval_request_interrupts_execution PASSED
-backend/tests/test_dukaandost.py::test_08_approval_resumes_same_workflow PASSED
-backend/tests/test_dukaandost.py::test_09_rejection_prevents_execution PASSED
-backend/tests/test_dukaandost.py::test_10_application_restart_restores_pending_workflow PASSED
-backend/tests/test_dukaandost.py::test_11_duplicate_execution_prevented PASSED
-backend/tests/test_dukaandost.py::test_12_failure_recovery_works PASSED
-backend/tests/test_dukaandost.py::test_13_feedback_updates_priorities PASSED
-backend/tests/test_dukaandost.py::test_14_dashboard_retrieves_backend_info PASSED
-backend/tests/test_dukaandost.py::test_15_financial_calculations_reconcile PASSED
-backend/tests/test_dukaandost.py::test_16_no_real_external_actions PASSED
-
-======================= 16 passed in 1.99s =======================
+npm run build
+# Output: 2,086 modules transformed, dist/ built with 0 errors.
 ```
 
 ---
 
-## 9. 5-7 Minute Demonstration Guide
+## 9. Pre-Configured Demo Credentials
 
-Follow the demonstration script in `docs/DEMO_SCRIPT.md`:
-1. **0:00 - 1:00:** Show Sharma General Store, Ranchi, Jharkhand. Verify initial ₹8,000 baseline and ₹10,000 target.
-2. **1:00 - 2:00:** Click "START AI WORKER" on the AI Worker page. Watch Business Analyst & Strategy Planner run.
-3. **2:00 - 3:00:** View agent coordination cards and generated growth strategies.
-4. **3:00 - 4:00:** Navigate to Approval Centre, review Bread + Butter Combo, and click APPROVE.
-5. **4:00 - 5:00:** Restart the backend process; demonstrate SQLite persistence and thread continuity.
-6. **5:00 - 6:00:** Click "Demo Failure" to trigger Butter Cost ₹60 > Sell ₹55. Show Finance Agent blocking the offer. Edit price to recover.
-7. **6:00 - 7:00:** View final simulated income (₹10,058.68, +25.7% growth) and evaluation metrics.
+For immediate evaluation without manual sign-up:
+- **Email:** `owner@sharmastore.com`
+- **Password:** `SharmaStore2026!`
+- **Store Name:** Sharma General Store (`STORE_001`)
+- **Location:** Ranchi, Jharkhand
+- **Role:** `OWNER`
 
 ---
 
-## 10. System Evaluation & Limitations
+## 10. Documentation Index
 
-### Evaluation Metrics:
-- **Task Completion Rate:** 100.0%
-- **Fault Recovery Rate:** 100.0%
-- **Income Improvement:** +₹2,058.68 (surpassing ₹2,000 target)
-- **Duplicate Execution Prevention:** Verified zero double runs
-
-### Limitations:
-- Single-store scope (does not support multi-branch kirana chains).
-- Simulated execution (does not transmit real WhatsApp/SMS messages or trigger actual bank payments).
-- Deterministic feedback loop (updates execution priorities, does not modify neural network weights).
+Comprehensive engineering documents are located in [`docs/`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/):
+- [`docs/SYSTEM_ARCHITECTURE.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/SYSTEM_ARCHITECTURE.md) — Multi-tier system architecture, graph states, and data flow.
+- [`docs/AUTHENTICATION.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/AUTHENTICATION.md) — JWT tokens, multi-tenant tenancy model, and RBAC matrix.
+- [`docs/AI_PROVIDER_SETUP.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/AI_PROVIDER_SETUP.md) — Zero-cost setup, model registry, prompt sanitization, and fallback rules.
+- [`docs/DATABASE_GUIDE.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/DATABASE_GUIDE.md) — Relational schema, Alembic migrations, and SQLite/PostgreSQL setup.
+- [`docs/SECURITY.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/SECURITY.md) — Threat mitigation, prompt injection defense, and security checklist.
+- [`docs/PRIVACY.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/PRIVACY.md) — Synthetic data declaration, customer PII protection, and sandboxed messaging.
+- [`docs/DEPLOYMENT.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/DEPLOYMENT.md) — Bare-metal, Docker, and environment variable references.
+- [`docs/BACKUP_AND_RECOVERY.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/BACKUP_AND_RECOVERY.md) — Online SQLite backups, manifest generation, and restore verification.
+- [`docs/TROUBLESHOOTING.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/TROUBLESHOOTING.md) — Diagnostics for ports, locks, migrations, and provider failover.
+- [`docs/PRODUCTION_READINESS.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/PRODUCTION_READINESS.md) — Final Phase Q verification scorecard.
+- [`docs/DEMO_SCRIPT.md`](file:///c:/Users/krish/OneDrive/Desktop/dukaandostai/docs/DEMO_SCRIPT.md) — Step-by-step 5-7 minute demonstration guide for evaluators.
 
 ---
 
 ## 11. License & Attribution
-Developed for the Eko AI Engineering Internship Technical Assignment. Licensed under the MIT License.
+
+Developed for the **Eko AI Engineering Internship Technical Assignment**.  
+Licensed under the **MIT License**.

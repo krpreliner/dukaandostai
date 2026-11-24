@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.services.execution_service import ExecutionService
@@ -8,10 +8,14 @@ from app.graph.workflow import build_dukaandost_graph
 router = APIRouter(prefix="/api", tags=["Worker"])
 
 @router.post("/worker/start")
-def start_worker(req: WorkerStartRequest = None, db: Session = Depends(get_db)):
+def start_worker(
+    req: WorkerStartRequest = None,
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
     svc = ExecutionService(db)
     target = req.target_income if req else 10000.0
-    return svc.start_worker(custom_target=target)
+    return svc.start_worker(custom_target=target, store_id=x_store_id)
 
 @router.get("/worker/status/{execution_id}")
 def get_worker_status(execution_id: str, db: Session = Depends(get_db)):
@@ -43,9 +47,12 @@ def get_worker_full_state(execution_id: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/agents/status")
-def get_agents_status(db: Session = Depends(get_db)):
+def get_agents_status(
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
     svc = ExecutionService(db)
-    latest = svc.repo.get_latest_execution()
+    latest = svc.repo.get_latest_execution(store_id=x_store_id)
     active_agent = latest.current_agent if latest else "Supervisor"
     worker_status = latest.status if latest else "IDLE"
 

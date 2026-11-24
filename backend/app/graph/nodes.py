@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from langgraph.types import interrupt
 from app.graph.state import DukaandostState
 from app.database.connection import SessionLocal
@@ -94,7 +94,6 @@ def strategy_planning_node(state: DukaandostState) -> Dict[str, Any]:
 
 def task_prioritisation_node(state: DukaandostState) -> Dict[str, Any]:
     queue = list(state.get("task_queue", []))
-    # Sort queue by priority: HIGH first, then MEDIUM, then LOW
     priority_weights = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
     queue.sort(key=lambda t: priority_weights.get(t.get("priority", "MEDIUM"), 1), reverse=True)
 
@@ -116,7 +115,6 @@ def supervisor_decision_node(state: DukaandostState) -> Dict[str, Any]:
             "current_task": "All strategy tasks processed"
         }
 
-    # Pop next task
     next_task = queue.pop(0)
 
     # Idempotency check: If task is already completed, skip it
@@ -193,7 +191,9 @@ def financial_validation_node(state: DukaandostState) -> Dict[str, Any]:
                 "current_task": f"Blocked task {active_task['task_id']} due to financial policy violation"
             }
 
-        # If financially valid
+        # If financially valid, resolve any past failure records for this task
+        repo.resolve_failures_for_task(active_task.get("task_id", ""))
+
         AuditLogger.log(
             db,
             event_type="FINANCIAL_VALIDATION_PASSED",
@@ -212,12 +212,6 @@ def financial_validation_node(state: DukaandostState) -> Dict[str, Any]:
 
 
 def human_approval_node(state: DukaandostState) -> Dict[str, Any]:
-    """
-    CRITICAL: No side effects before interrupt!
-    When paused, interrupt() yields to human approval.
-    When resumed with Command(resume={'action': 'APPROVE'/'REJECT'}),
-    we record the decision and proceed idempotently.
-    """
     active_task = state.get("active_task")
     if not active_task:
         return {"active_task": None}
@@ -226,7 +220,6 @@ def human_approval_node(state: DukaandostState) -> Dict[str, Any]:
     task_id = active_task.get("task_id", "")
     task_name = active_task.get("task_name", "")
 
-    # Prepare interrupt payload
     approval_payload = {
         "execution_id": exec_id,
         "task_id": task_id,
@@ -238,37 +231,44 @@ def human_approval_node(state: DukaandostState) -> Dict[str, Any]:
         "details": active_task.get("details", {})
     }
 
-    # Sync pending approval to DB for visibility in dashboard
+    # Sync pending approval to DB if not already present
     db = SessionLocal()
     try:
         repo = BusinessRepository(db)
-        repo.create_approval_request({
-            "execution_id": exec_id,
-            "task_id": task_id,
-            "action_description": approval_payload["action_description"],
-            "requesting_agent": approval_payload["requesting_agent"],
-            "original_price": active_task.get("details", {}).get("original_price", 115.0),
-            "proposed_price": active_task.get("details", {}).get("proposed_price", 109.0),
-            "gross_margin_pct": 10.09,
-            "expected_impact": active_task.get("expected_impact", 0.0),
-            "justification": "Increase basket order size and boost Kirana profitability.",
-            "risk_assessment": "Financially verified positive margin.",
-            "status": "PENDING"
-        })
-        repo.create_or_update_task({
-            "execution_id": exec_id,
-            "task_id": task_id,
-            "task_name": task_name,
-            "assigned_agent": active_task.get("assigned_agent", "Supervisor"),
-            "status": "WAITING_APPROVAL"
-        })
-        AuditLogger.log(
-            db,
-            event_type="APPROVAL_REQUESTED",
-            agent_name="Supervisor",
-            details=f"Human approval requested for Task {task_id}: {task_name}",
-            execution_id=exec_id
-        )
+        existing_app = repo.get_approval(exec_id, task_id)
+        if not existing_app or existing_app.status == "PENDING":
+            details = active_task.get("details", {})
+            orig_p = details.get("original_price", 115.0 if "bundle_name" in details else 2380.0)
+            prop_p = details.get("proposed_price", 109.0 if "bundle_name" in details else 2380.0)
+            margin_p = details.get("gross_margin_pct", 10.09 if "bundle_name" in details else 20.17)
+
+            repo.create_approval_request({
+                "execution_id": exec_id,
+                "task_id": task_id,
+                "action_description": approval_payload["action_description"],
+                "requesting_agent": approval_payload["requesting_agent"],
+                "original_price": orig_p,
+                "proposed_price": prop_p,
+                "gross_margin_pct": margin_p,
+                "expected_impact": active_task.get("expected_impact", 0.0),
+                "justification": "Increase basket order size and boost Kirana profitability." if "bundle_name" in details else "Restock high-velocity essentials to prevent missed footfall turnover.",
+                "risk_assessment": "Financially verified positive margin.",
+                "status": "PENDING"
+            })
+            repo.create_or_update_task({
+                "execution_id": exec_id,
+                "task_id": task_id,
+                "task_name": task_name,
+                "assigned_agent": active_task.get("assigned_agent", "Supervisor"),
+                "status": "WAITING_APPROVAL"
+            })
+            AuditLogger.log(
+                db,
+                event_type="APPROVAL_REQUESTED",
+                agent_name="Supervisor",
+                details=f"Human approval requested for Task {task_id}: {task_name}",
+                execution_id=exec_id
+            )
     finally:
         db.close()
 
@@ -285,7 +285,7 @@ def human_approval_node(state: DukaandostState) -> Dict[str, Any]:
     db = SessionLocal()
     try:
         repo = BusinessRepository(db)
-        is_approved = (decision == "APPROVE" or decision == "APPROVED")
+        is_approved = ("APPROV" in decision)
         new_status = "APPROVED" if is_approved else "REJECTED"
 
         repo.create_approval_request({
@@ -294,7 +294,7 @@ def human_approval_node(state: DukaandostState) -> Dict[str, Any]:
             "action_description": approval_payload["action_description"],
             "requesting_agent": approval_payload["requesting_agent"],
             "status": new_status,
-            "decided_at": datetime.utcnow()
+            "decided_at": datetime.now(timezone.utc)
         })
 
         AuditLogger.log(
@@ -398,15 +398,21 @@ def business_metric_update_node(state: DukaandostState) -> Dict[str, Any]:
     exec_id = state.get("execution_id", "EXEC_INIT")
     simulated_impact = active_task.get("simulated_impact", 0.0)
 
+    completed = list(state.get("completed_tasks", []))
     curr_sim_income = state.get("simulated_income", state.get("initial_income", 8000.0))
-    new_sim_income = round(curr_sim_income + simulated_impact, 2)
+
+    # Strict idempotency check: Only increment income if task has not already been completed
+    already_completed = any(
+        (t.get("task_id") if isinstance(t, dict) else t) == active_task.get("task_id")
+        for t in completed
+    )
+    if not already_completed:
+        completed.append(active_task)
+        new_sim_income = round(curr_sim_income + simulated_impact, 2)
+    else:
+        new_sim_income = curr_sim_income
 
     active_task["status"] = "COMPLETED"
-
-    completed = list(state.get("completed_tasks", []))
-    # Idempotency check before appending
-    if not any(t["task_id"] == active_task["task_id"] for t in completed):
-        completed.append(active_task)
 
     # Sync to DB
     db = SessionLocal()
@@ -414,9 +420,9 @@ def business_metric_update_node(state: DukaandostState) -> Dict[str, Any]:
         repo = BusinessRepository(db)
         repo.create_or_update_task({
             "execution_id": exec_id,
-            "task_id": active_task["task_id"],
-            "task_name": active_task["task_name"],
-            "assigned_agent": active_task["assigned_agent"],
+            "task_id": active_task.get("task_id", "TASK_UNKNOWN"),
+            "task_name": active_task.get("task_name", "Growth Action"),
+            "assigned_agent": active_task.get("assigned_agent", "Supervisor"),
             "status": "COMPLETED",
             "simulated_impact": simulated_impact,
             "execution_result": str(active_task.get("execution_result", ""))
@@ -462,7 +468,7 @@ def feedback_evaluation_node(state: DukaandostState) -> Dict[str, Any]:
             f"Market uptake realistic; prioritize complementary high-velocity staples in subsequent replenishment."
             if expected > 0 else "Neutral baseline impact."
         ),
-        "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
     feedback_list.append(feedback_entry)
 
@@ -480,7 +486,7 @@ def feedback_evaluation_node(state: DukaandostState) -> Dict[str, Any]:
 
     return {
         "feedback": feedback_list,
-        "active_task": None, # Clean active task
+        "active_task": None,
         "current_status": "EXECUTING",
         "current_agent": "Supervisor",
         "current_task": "Selecting next prioritized task"
@@ -553,7 +559,7 @@ def replanning_or_completion_node(state: DukaandostState) -> Dict[str, Any]:
             "variance": total_added,
             "current_agent": "Supervisor",
             "current_task": "Cycle Completed Successfully",
-            "completed_at": datetime.utcnow()
+            "completed_at": datetime.now(timezone.utc)
         })
     finally:
         db.close()

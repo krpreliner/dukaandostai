@@ -1,4 +1,5 @@
 export interface BusinessOverview {
+  store_id?: string;
   store_name: string;
   store_location: string;
   store_owner: string;
@@ -143,4 +144,117 @@ export interface EvaluationMetrics {
   income_improvement: number;
   target_achievement_pct: number;
   duplicate_execution_prevented: boolean;
+}
+
+// Multi-tenant & Auth Types
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+}
+
+export interface StoreWorkspace {
+  store_id: string;
+  name: string;
+  location: string;
+  owner_name: string;
+  role: 'OWNER' | 'MANAGER' | 'STAFF' | 'VIEWER';
+  initial_net_income: number;
+  target_net_income: number;
+  current_net_income: number;
+  simulated_net_income: number;
+}
+
+export interface StoreMember {
+  user_id: number;
+  email: string;
+  full_name: string;
+  role: 'OWNER' | 'MANAGER' | 'STAFF' | 'VIEWER';
+  created_at?: string;
+}
+
+// AI Provider Types
+export interface AIProvider {
+  provider_name: string;
+  supported_models: string[];
+  selected_model: string;
+  is_enabled: boolean;
+  is_primary: boolean;
+  is_fallback: boolean;
+  status: 'CONNECTED AND VERIFIED' | 'NOT CONFIGURED' | 'CONNECTION FAILED';
+  latency_ms: number;
+  message: string;
+}
+
+export interface AIUsageStats {
+  total_requests: number;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms: number;
+}
+
+// Integration Types
+export interface IntegrationItem {
+  id: number;
+  integration_type: string;
+  is_enabled: boolean;
+  status: 'CONNECTED AND VERIFIED' | 'NOT CONFIGURED' | 'CONNECTION FAILED';
+  config: string;
+  updated_at?: string;
+}
+
+// System Health Types
+export interface SystemHealth {
+  status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
+  app_env: string;
+  uptime_seconds: number;
+  database_connected: boolean;
+  database_latency_ms: number;
+  process_memory_mb: number;
+  process_cpu_pct: number;
+  ai_mode: string;
+  zero_paid_cost_enforced: boolean;
+  timestamp: string;
+}
+
+// AI Daily Business Briefing Types
+export interface DailyBriefingData {
+  id?: number;
+  briefing_date: string;
+  greeting: string;
+  summary_text: string;
+  summary_text_hi?: string;
+  summary_text_en?: string;
+  audio_script: string;
+  audio_script_hi?: string;
+  audio_script_en?: string;
+  today_sales: number;
+  yesterday_sales: number;
+  sales_growth_pct: number;
+  low_stock_count: number;
+  inactive_customer_count: number;
+  growth_opportunities: Array<{
+    title: string;
+    impact_inr: number;
+    action: string;
+  }>;
+  pending_approvals_count?: number;
+  created_at: string;
+}
+
+// Conversational AI Assistant Types
+export interface ChatMessageData {
+  id?: number;
+  role: 'user' | 'assistant';
+  content: string;
+  tools_used?: string[];
+  evidence?: Record<string, any>;
+  suggested_actions?: string[];
+  provider?: string;
+  model?: string;
+  latency_ms?: number;
+  timestamp?: string;
 }

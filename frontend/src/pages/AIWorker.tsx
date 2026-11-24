@@ -57,7 +57,7 @@ export const AIWorker: React.FC = () => {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-8 space-y-8 w-full">
       {/* Command Centre Control Header */}
       <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">

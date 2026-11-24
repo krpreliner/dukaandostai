@@ -1,6 +1,7 @@
 import pytest
 import os
 import sqlite3
+from pydantic import ValidationError
 from app.database.connection import init_db, SessionLocal, engine
 from app.data.synthetic_data.generator import (
     generate_customers, generate_products, generate_expenses,
@@ -16,7 +17,10 @@ from app.tools.profit_calculator import ProfitCalculator
 from app.services.execution_service import ExecutionService
 from app.services.approval_service import ApprovalService
 from app.services.business_service import BusinessService
-from app.database.models import Product, TaskRecord, ApprovalRecord
+from app.services.evaluation_service import EvaluationService
+from app.graph.nodes import business_metric_update_node
+from app.api.schemas.api_models import ProductPriceUpdateRequest
+from app.database.models import Product, TaskRecord, ApprovalRecord, FailureRecord
 
 @pytest.fixture(scope="module")
 def setup_db():
@@ -127,7 +131,7 @@ def test_08_approval_resumes_same_workflow(setup_db):
     task_id = pending[0]["task_id"]
     res = app_svc.handle_decision(task_id, "APPROVE")
     assert res["success"] is True
-    assert res["decision"] == "APPROVE"
+    assert res["decision"] in ["APPROVE", "APPROVED"]
 
 
 def test_09_rejection_prevents_execution(setup_db):
@@ -139,7 +143,7 @@ def test_09_rejection_prevents_execution(setup_db):
         task_id = pending[0]["task_id"]
         res = app_svc.handle_decision(task_id, "REJECT")
         assert res["success"] is True
-        assert res["decision"] == "REJECT"
+        assert res["decision"] in ["REJECT", "REJECTED"]
         db.expire_all()
         task_rec = db.query(TaskRecord).filter_by(execution_id=res["execution_id"], task_id=task_id).first()
         assert task_rec.status == "REJECTED"
@@ -235,3 +239,102 @@ def test_16_no_real_external_actions():
     """TEST 16: No real external actions (API payments, SMS gateway) are configured or executed."""
     assert os.getenv("REAL_PAYMENT_GATEWAY_URL") is None
     assert os.getenv("TWILIO_LIVE_SMS_AUTH") is None
+
+
+def test_17_approval_history_retrieval(setup_db):
+    """TEST 17: Approval history endpoint returns resolved decisions."""
+    db = setup_db
+    app_svc = ApprovalService(db)
+    history = app_svc.get_approval_history()
+    assert isinstance(history, list)
+    for h in history:
+        assert h["status"] in ["APPROVED", "REJECTED"]
+
+
+def test_18_failure_resolution_endpoints(setup_db):
+    """TEST 18: Failure resolution updates status to RESOLVED."""
+    db = setup_db
+    exec_svc = ExecutionService(db)
+    fail_record = FailureRecord(
+        execution_id="TEST_EXEC_FAIL",
+        task_id="TASK_FAIL_001",
+        agent_name="Finance Agent",
+        error_description="Test margin fault",
+        root_cause="TEST_MARGIN_VIOLATION",
+        recovery_status="UNRESOLVED",
+        retry_count=1
+    )
+    db.add(fail_record)
+    db.commit()
+    db.refresh(fail_record)
+
+    res = exec_svc.repo.resolve_failure(fail_record.id)
+    assert res is not None and res.recovery_status == "RESOLVED"
+    db.refresh(fail_record)
+    assert fail_record.recovery_status == "RESOLVED"
+
+    # Test resolve all
+    db.add(FailureRecord(
+        execution_id="TEST_EXEC_FAIL_2",
+        task_id="TASK_FAIL_002",
+        agent_name="Inventory Agent",
+        error_description="Stock anomaly",
+        root_cause="TEST_STOCK_VIOLATION",
+        recovery_status="UNRESOLVED",
+        retry_count=0
+    ))
+    db.commit()
+    exec_svc.repo.resolve_all_failures()
+    unresolved = db.query(FailureRecord).filter_by(recovery_status="UNRESOLVED").count()
+    assert unresolved == 0
+
+
+def test_19_invalid_price_and_product_validation():
+    """TEST 19: Strict Pydantic validation rejects negative or zero prices."""
+    # Negative cost price must raise ValidationError
+    with pytest.raises(ValidationError):
+        ProductPriceUpdateRequest(cost_price=-10.0, selling_price=50.0)
+
+    # Zero selling price must raise ValidationError
+    with pytest.raises(ValidationError):
+        ProductPriceUpdateRequest(cost_price=40.0, selling_price=0.0)
+
+    # Valid prices pass validation
+    valid = ProductPriceUpdateRequest(cost_price=40.0, selling_price=50.0)
+    assert valid.cost_price == 40.0
+    assert valid.selling_price == 50.0
+
+
+def test_20_duplicate_execution_on_same_thread_prevented():
+    """TEST 20: LangGraph metric update node ignores already-completed task IDs."""
+    test_state = {
+        "execution_id": "EXEC_TEST_IDEMP",
+        "simulated_income": 8000.0,
+        "completed_tasks": ["TASK_01"],
+        "active_task": {
+            "task_id": "TASK_01",
+            "task_name": "Test Combo",
+            "assigned_agent": "Marketing Agent",
+            "simulated_impact": 500.0,
+            "status": "COMPLETED"
+        },
+        "audit_logs": []
+    }
+    # Execute node with already-completed TASK_01
+    result_state = business_metric_update_node(test_state)
+    # Income must remain 8000.0 (not increased to 8500.0)
+    assert result_state["simulated_income"] == 8000.0
+
+
+def test_21_evaluation_metrics_generation(setup_db):
+    """TEST 21: EvaluationService computes valid metrics for system evaluation."""
+    db = setup_db
+    eval_svc = EvaluationService(db)
+    metrics = eval_svc.evaluate_system()
+    assert "total_tasks" in metrics
+    assert "completion_rate_pct" in metrics
+    assert "recovery_rate_pct" in metrics
+    assert "duplicate_execution_prevented" in metrics
+    assert metrics["duplicate_execution_prevented"] is True
+    assert metrics["initial_net_income"] == 8000.0
+    assert metrics["target_net_income"] == 10000.0

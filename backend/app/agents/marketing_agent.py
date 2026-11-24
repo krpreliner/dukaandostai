@@ -32,6 +32,21 @@ class MarketingAgent:
             f"ताज़ा नाश्ता, सबसे किफ़ायती दाम पर! आज ही पधारें।"
         )
 
+        # Dynamic AI generation if LLM is active
+        try:
+            from app.ai.provider_router import AIRouter
+            router = AIRouter(self.db)
+            prompt = (
+                f"Write a warm, authentic 2-sentence bilingual (Hindi & Hinglish) promotional message for "
+                f"Sharma General Store, Ranchi. Product Combo: '{bundle_name}'. "
+                f"Original Price: ₹{orig_price}, Special Price: ₹{proposed_price}. Highlight freshness and savings."
+            )
+            ai_res = router.route_text_generation_sync(prompt=prompt, agent_name="Marketing Agent")
+            if ai_res and ai_res.get("text"):
+                hindi_msg = ai_res["text"].strip()
+        except Exception:
+            pass
+
         return {
             "bundle_name": bundle_name,
             "product_ids": product_ids,

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { Overview } from './pages/Overview';
@@ -12,6 +14,13 @@ import { Customers } from './pages/Customers';
 import { ExecutionHistory } from './pages/ExecutionHistory';
 import { FailureMonitoring } from './pages/FailureMonitoring';
 import { Settings } from './pages/Settings';
+import { AIProviders } from './pages/AIProviders';
+import { TeamManagement } from './pages/TeamManagement';
+import { Integrations } from './pages/Integrations';
+import { SystemHealthPage } from './pages/SystemHealth';
+import { LoginPage } from './pages/Login';
+import { AssistantModal } from './components/ui/AssistantModal';
+import { Bot, Sparkles } from 'lucide-react';
 import { startWorker, triggerDemoFailure, resetDemoData, getOverview, getPendingApprovals } from './services/api';
 
 const routeTitles: Record<string, string> = {
@@ -24,16 +33,23 @@ const routeTitles: Record<string, string> = {
   '/customers': 'Customer Cohorts & Insights',
   '/history': 'Audit & Execution History',
   '/failures': 'Failure Monitoring & Safety Guardrails',
+  '/ai-providers': 'AI Providers & Routing Management',
+  '/team': 'Team & Store Roles Management',
+  '/integrations': 'External Integrations & Connectors',
+  '/health': 'System Health & Telemetry',
   '/settings': 'System Settings & Governance',
+  '/login': 'Workspace Authentication'
 };
 
 const AppContent: React.FC = () => {
   const location = useLocation();
   const pageTitle = routeTitles[location.pathname] || 'DukaanDost AI';
+  const { user } = useAuth();
 
   const [workerStatus, setWorkerStatus] = useState<string>('IDLE');
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
   const [isStartingWorker, setIsStartingWorker] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const refreshGlobalState = async () => {
     try {
@@ -87,22 +103,23 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#050505] text-white">
       {/* Sidebar */}
       <Sidebar pendingApprovalsCount={pendingApprovalsCount} />
 
       {/* Main Body */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           pageTitle={pageTitle}
           workerStatus={workerStatus}
           onStartWorker={handleStartWorker}
           onTriggerFailure={handleTriggerFailure}
           onReset={handleReset}
+          onOpenAssistant={() => setIsAssistantOpen(true)}
           isLoading={isStartingWorker}
         />
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <Routes>
             <Route path="/" element={<Overview onStartWorker={handleStartWorker} />} />
             <Route path="/worker" element={<AIWorker />} />
@@ -113,10 +130,31 @@ const AppContent: React.FC = () => {
             <Route path="/customers" element={<Customers />} />
             <Route path="/history" element={<ExecutionHistory />} />
             <Route path="/failures" element={<FailureMonitoring />} />
+            <Route path="/ai-providers" element={<AIProviders />} />
+            <Route path="/team" element={<TeamManagement />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/health" element={<SystemHealthPage />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<LoginPage onLoginSuccess={() => window.location.href = '/'} />} />
           </Routes>
         </main>
       </div>
+
+      {/* Conversational AI Business Partner Slide-over Modal */}
+      <AssistantModal
+        isOpen={isAssistantOpen}
+        onClose={() => setIsAssistantOpen(false)}
+      />
+
+      {/* Floating AI Business Assistant Action Button */}
+      <button
+        onClick={() => setIsAssistantOpen(true)}
+        title="Chat with DukaanDost AI Business Partner"
+        className="fixed bottom-6 right-6 z-30 px-4 py-3 rounded-full bg-[#22D3EE] hover:bg-[#06b6d4] text-black font-semibold text-xs shadow-xl shadow-[#22D3EE]/25 transition-all hover:scale-105 cursor-pointer flex items-center gap-2 group border border-cyan-300/40"
+      >
+        <Sparkles className="w-4 h-4 fill-current animate-spin" style={{ animationDuration: '6s' }} />
+        <span>Ask DukaanDost AI</span>
+      </button>
     </div>
   );
 };
@@ -124,7 +162,11 @@ const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 };

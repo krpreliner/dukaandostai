@@ -26,8 +26,11 @@ wheels/
 # Databases & Checkpoints (Keep local run artifacts ignored)
 *.db
 *.sqlite3
-checkpoints.db
-dukaandost.db
+*.db-shm
+*.db-wal
+checkpoints.db*
+dukaandost.db*
+backups/
 
 # Node / Frontend
 node_modules/
@@ -37,6 +40,9 @@ frontend/.vite/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# GitHub Workflows (unless PAT has workflow scope)
+.github/
 
 # Environment & Secrets
 .env

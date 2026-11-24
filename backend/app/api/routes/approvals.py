@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database.connection import get_db
@@ -8,9 +8,22 @@ from app.api.schemas.api_models import ApprovalActionRequest
 router = APIRouter(prefix="/api/approvals", tags=["Approvals"])
 
 @router.get("/pending")
-def get_pending_approvals(execution_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def get_pending_approvals(
+    execution_id: Optional[str] = Query(None),
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
     svc = ApprovalService(db)
-    return svc.get_pending_approvals(execution_id=execution_id)
+    return svc.get_pending_approvals(execution_id=execution_id, store_id=x_store_id)
+
+@router.get("/history")
+def get_approval_history(
+    execution_id: Optional[str] = Query(None),
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
+    svc = ApprovalService(db)
+    return svc.get_all_approvals_history(execution_id=execution_id, store_id=x_store_id)
 
 @router.post("/{task_id}/approve")
 def approve_task(task_id: str, req: ApprovalActionRequest = None, db: Session = Depends(get_db)):

@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import Optional
 from app.database.connection import get_db
 from app.database.models import ExecutionRecord, TaskRecord, FailureRecord, AuditLog
 from app.services.execution_service import ExecutionService
+from app.database.repository import BusinessRepository
 
 router = APIRouter(prefix="/api", tags=["Executions"])
 
 @router.get("/executions")
-def list_executions(db: Session = Depends(get_db)):
-    records = db.query(ExecutionRecord).order_by(desc(ExecutionRecord.id)).all()
+def list_executions(
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
+    records = db.query(ExecutionRecord).filter_by(store_id=x_store_id).order_by(desc(ExecutionRecord.id)).all()
     return [
         {
             "execution_id": r.execution_id,
@@ -38,8 +42,12 @@ def get_execution_detail(execution_id: str, db: Session = Depends(get_db)):
     return res
 
 @router.get("/failures")
-def list_failures(execution_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    q = db.query(FailureRecord)
+def list_failures(
+    execution_id: Optional[str] = Query(None),
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
+    q = db.query(FailureRecord).filter_by(store_id=x_store_id)
     if execution_id:
         q = q.filter_by(execution_id=execution_id)
     records = q.order_by(desc(FailureRecord.id)).all()
@@ -58,9 +66,40 @@ def list_failures(execution_id: Optional[str] = Query(None), db: Session = Depen
         for r in records
     ]
 
+@router.post("/failures/{failure_id}/resolve")
+def resolve_single_failure(failure_id: int, db: Session = Depends(get_db)):
+    repo = BusinessRepository(db)
+    rec = repo.resolve_failure(failure_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail=f"Failure record #{failure_id} not found")
+    return {
+        "status": "SUCCESS",
+        "message": f"Failure #{failure_id} resolved.",
+        "failure_id": failure_id,
+        "recovery_status": rec.recovery_status
+    }
+
+@router.post("/failures/resolve-all")
+def resolve_all_active_failures(
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
+    repo = BusinessRepository(db)
+    count = repo.resolve_all_failures(store_id=x_store_id)
+    return {
+        "status": "SUCCESS",
+        "message": f"Resolved {count} failure records.",
+        "resolved_count": count
+    }
+
 @router.get("/audit-logs")
-def list_audit_logs(execution_id: Optional[str] = Query(None), limit: int = 50, db: Session = Depends(get_db)):
-    q = db.query(AuditLog)
+def list_audit_logs(
+    execution_id: Optional[str] = Query(None),
+    limit: int = 50,
+    x_store_id: str = Header("STORE_001", alias="X-Store-Id"),
+    db: Session = Depends(get_db)
+):
+    q = db.query(AuditLog).filter_by(store_id=x_store_id)
     if execution_id:
         q = q.filter_by(execution_id=execution_id)
     logs = q.order_by(desc(AuditLog.id)).limit(limit).all()

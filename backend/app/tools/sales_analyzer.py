@@ -68,6 +68,27 @@ class SalesAnalyzer:
             for r in cat_query
         ]
 
+        # 30-Day Daily Sales & Profit Trend from actual database records
+        daily_query = (
+            db.query(
+                Transaction.transaction_date,
+                func.sum(Transaction.total_amount).label("daily_sales"),
+                func.sum(Transaction.gross_profit).label("daily_profit")
+            )
+            .group_by(Transaction.transaction_date)
+            .order_by(Transaction.transaction_date.asc())
+            .all()
+        )
+
+        daily_trends = [
+            {
+                "date": r.transaction_date.strftime("%d %b") if hasattr(r.transaction_date, "strftime") else str(r.transaction_date)[5:],
+                "sales": round(float(r.daily_sales), 2),
+                "profit": round(float(r.daily_profit), 2)
+            }
+            for r in daily_query
+        ]
+
         return {
             "revenue": round(total_rev, 2),
             "cogs": round(total_cogs, 2),
@@ -76,5 +97,6 @@ class SalesAnalyzer:
             "net_income": net_income,
             "gross_margin_pct": gross_margin_pct,
             "top_products": top_products,
-            "category_breakdown": category_breakdown
+            "category_breakdown": category_breakdown,
+            "daily_trends": daily_trends
         }

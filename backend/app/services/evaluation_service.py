@@ -7,11 +7,11 @@ class EvaluationService:
     def __init__(self, db: Session):
         self.db = db
 
-    def evaluate_system(self, execution_id: str = None) -> Dict[str, Any]:
-        task_q = self.db.query(TaskRecord)
-        app_q = self.db.query(ApprovalRecord)
-        fail_q = self.db.query(FailureRecord)
-        exec_q = self.db.query(ExecutionRecord)
+    def evaluate_system(self, execution_id: str = None, store_id: str = "STORE_001") -> Dict[str, Any]:
+        task_q = self.db.query(TaskRecord).filter_by(store_id=store_id)
+        app_q = self.db.query(ApprovalRecord).filter_by(store_id=store_id)
+        fail_q = self.db.query(FailureRecord).filter_by(store_id=store_id)
+        exec_q = self.db.query(ExecutionRecord).filter_by(store_id=store_id)
 
         if execution_id:
             task_q = task_q.filter_by(execution_id=execution_id)
@@ -53,11 +53,15 @@ class EvaluationService:
         income_improvement = round(sim_income - settings.INITIAL_NET_INCOME, 2)
         target_achievement_pct = round((income_improvement / settings.REQUIRED_GROWTH) * 100, 1)
 
-        # Duplicate execution prevention
-        task_id_counts = {}
+        # Duplicate execution prevention (per-execution unique task_id check)
+        duplicate_prevented = True
+        exec_task_seen = set()
         for t in tasks:
-            task_id_counts[t.task_id] = task_id_counts.get(t.task_id, 0) + 1
-        duplicate_prevented = all(c <= 1 for c in task_id_counts.values())
+            key = f"{t.execution_id}_{t.task_id}"
+            if key in exec_task_seen:
+                duplicate_prevented = False
+                break
+            exec_task_seen.add(key)
 
         return {
             "execution_id": execution_id,
@@ -71,6 +75,7 @@ class EvaluationService:
             "rejected_count": rejected_count,
             "approval_rate_pct": approval_rate,
             "total_failures": total_failures,
+            "recovered_failures": recovered_count,
             "recovery_rate_pct": recovery_rate,
             "total_expected_profit": total_expected,
             "total_simulated_profit": total_simulated,

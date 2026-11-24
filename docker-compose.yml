@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: dukaandost-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - AI_MODE=deterministic
+      - DATABASE_URL=sqlite:////app/data/dukaandost.db
+      - JWT_SECRET_KEY=dukaandost_kirana_growth_manager_production_key_2026
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - CHECKPOINT_DB_PATH=/app/data/checkpoints.db
+    volumes:
+      - sqlite_data:/app/data
+      - backups_data:/app/backups
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - dukaandost-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: dukaandost-frontend
+    ports:
+      - "5173:80"
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - dukaandost-network
+
+  # Optional PostgreSQL container for enterprise production multi-store scaling
+  # Run with: docker-compose --profile postgres up
+  postgres:
+    image: postgres:16-alpine
+    container_name: dukaandost-postgres
+    profiles:
+      - postgres
+    environment:
+      POSTGRES_DB: dukaandost
+      POSTGRES_USER: dukaandost_user
+      POSTGRES_PASSWORD: dukaandost_secure_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - dukaandost-network
+
+volumes:
+  sqlite_data:
+    name: dukaandost_sqlite_data
+  backups_data:
+    name: dukaandost_backups_data
+  postgres_data:
+    name: dukaandost_postgres_data
+
+networks:
+  dukaandost-network:
+    driver: bridge

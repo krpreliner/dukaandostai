@@ -8,40 +8,47 @@ import {
   ShieldAlert,
   Bot,
   Activity,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { MetricCard } from '../components/ui/MetricCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { DailyBriefingCard } from '../components/ui/DailyBriefingCard';
 import { BusinessOverview, AgentInfo, AuditLog } from '../types';
 import { getOverview, getAgentsStatus, getAuditLogs } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const Overview: React.FC<{ onStartWorker: () => void }> = ({ onStartWorker }) => {
+  const { language } = useLanguage();
   const [overview, setOverview] = useState<BusinessOverview | null>(null);
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchData = async () => {
+    try {
+      const [ov, ag, lg] = await Promise.all([
+        getOverview(),
+        getAgentsStatus(),
+        getAuditLogs()
+      ]);
+      setOverview(ov);
+      setAgents(ag.agents || []);
+      setLogs(lg.slice(0, 5));
+    } catch (err) {
+      console.error('Error fetching overview data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [ov, ag, lg] = await Promise.all([
-          getOverview(),
-          getAgentsStatus(),
-          getAuditLogs()
-        ]);
-        setOverview(ov);
-        setAgents(ag.agents || []);
-        setLogs(lg.slice(0, 5));
-      } catch (err) {
-        console.error('Error fetching overview data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
+    const interval = setInterval(fetchData, 3500);
+    return () => clearInterval(interval);
   }, []);
 
-  if (loading || !overview) {
+  if (loading && !overview) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
         <div className="flex items-center gap-3 text-neutral-400">
@@ -52,10 +59,12 @@ export const Overview: React.FC<{ onStartWorker: () => void }> = ({ onStartWorke
     );
   }
 
+  if (!overview) return null;
+
   const isSimulated = overview.simulated_net_income > overview.initial_net_income;
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-8 space-y-8 w-full">
       {/* Welcome Hero Banner */}
       <div className="bg-gradient-to-r from-[#111111] via-[#141414] to-[#0A0A0A] border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-full bg-[#22D3EE]/5 blur-3xl pointer-events-none" />
@@ -68,22 +77,29 @@ export const Overview: React.FC<{ onStartWorker: () => void }> = ({ onStartWorke
               <span className="text-xs text-neutral-500">• Ranchi, Jharkhand</span>
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
-              Good Evening, Sharma Ji!
+              {language === 'hi' ? 'नमस्ते, शर्मा जी!' : 'Good Evening, Sharma Ji!'}
             </h2>
             <p className="text-neutral-400 text-sm mt-1 max-w-xl">
-              Your autonomous growth manager is active. Goal: Bridge monthly net income from ₹8,000 to ₹10,000 (+25% growth) via inventory optimisation and customer reactivation.
+              {language === 'hi'
+                ? 'आपका ऑटोनॉमस ग्रोथ मैनेजर सक्रिय है। लक्ष्य: इन्वेंटरी सुधार और ग्राहकों की वापसी द्वारा मासिक शुद्ध मुनाफे को ₹8,000 से ₹10,000 (+25% वृद्धि) तक ले जाना।'
+                : 'Your autonomous growth manager is active. Goal: Bridge monthly net income from ₹8,000 to ₹10,000 (+25% growth) via inventory optimisation and customer reactivation.'}
             </p>
           </div>
 
-          <button
-            onClick={onStartWorker}
-            className="self-start md:self-center px-5 py-2.5 rounded-xl bg-[#22D3EE] hover:bg-[#06b6d4] text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-[#22D3EE]/20 transition-all cursor-pointer"
-          >
-            <Bot className="w-4 h-4" />
-            <span>Launch Growth Cycle</span>
-          </button>
+          <div className="flex items-center gap-3 self-start md:self-center">
+            <button
+              onClick={onStartWorker}
+              className="px-5 py-2.5 rounded-xl bg-[#22D3EE] hover:bg-[#06b6d4] text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-[#22D3EE]/20 transition-all cursor-pointer"
+            >
+              <Bot className="w-4 h-4" />
+              <span>{language === 'hi' ? 'ग्रोथ चक्र शुरू करें' : 'Launch Growth Cycle'}</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* AI Daily Business Briefing */}
+      <DailyBriefingCard />
 
       {/* 4 Primary Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

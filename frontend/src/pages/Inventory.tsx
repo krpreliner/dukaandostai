@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Package, Search, Filter, AlertCircle, Edit2, Check, X } from 'lucide-react';
+import { Package, Search, Filter, AlertCircle, Edit2, Check, X, RefreshCw } from 'lucide-react';
 import { getProducts, updateProductPrice } from '../services/api';
 import { Product } from '../types';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -13,6 +13,7 @@ export const Inventory: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editCost, setEditCost] = useState<number>(0);
   const [editSell, setEditSell] = useState<number>(0);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const fetchProductsList = async () => {
     try {
@@ -44,21 +45,33 @@ export const Inventory: React.FC = () => {
     setEditingProduct(p);
     setEditCost(p.cost_price);
     setEditSell(p.selling_price);
+    setValidationError(null);
   };
 
   const handleSavePrice = async () => {
     if (!editingProduct) return;
+    if (isNaN(editCost) || editCost <= 0) {
+      setValidationError('Cost price must be greater than zero.');
+      return;
+    }
+    if (isNaN(editSell) || editSell <= 0) {
+      setValidationError('Selling price must be greater than zero.');
+      return;
+    }
+
     try {
       await updateProductPrice(editingProduct.product_id, editCost, editSell);
       await fetchProductsList();
       setEditingProduct(null);
+      setValidationError(null);
     } catch (err) {
       console.error('Price update failed:', err);
+      setValidationError('Failed to update product pricing.');
     }
   };
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-8 space-y-6 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -69,6 +82,14 @@ export const Inventory: React.FC = () => {
             Real-time stock levels, margin health, expiry alerts, and supplier traceability across {products.length} catalog items.
           </p>
         </div>
+
+        <button
+          onClick={fetchProductsList}
+          className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-[#171717] hover:bg-neutral-800 border border-white/[0.08] text-xs text-neutral-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* Filters & Search */}
@@ -192,12 +213,23 @@ export const Inventory: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
+              {validationError && (
+                <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                  {validationError}
+                </div>
+              )}
+
               <div>
                 <label className="text-neutral-400 mb-1 block">Cost Price (₹)</label>
                 <input
                   type="number"
+                  min="0.01"
+                  step="0.5"
                   value={editCost}
-                  onChange={(e) => setEditCost(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    setEditCost(parseFloat(e.target.value) || 0);
+                    setValidationError(null);
+                  }}
                   className="w-full bg-[#171717] border border-white/[0.08] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-[#22D3EE]"
                 />
               </div>
@@ -206,8 +238,13 @@ export const Inventory: React.FC = () => {
                 <label className="text-neutral-400 mb-1 block">Selling Price (₹)</label>
                 <input
                   type="number"
+                  min="0.01"
+                  step="0.5"
                   value={editSell}
-                  onChange={(e) => setEditSell(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    setEditSell(parseFloat(e.target.value) || 0);
+                    setValidationError(null);
+                  }}
                   className="w-full bg-[#171717] border border-white/[0.08] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-[#22D3EE]"
                 />
               </div>
