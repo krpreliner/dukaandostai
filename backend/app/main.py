@@ -95,9 +95,11 @@ def legacy_health_check():
 @app.get("/api/report/download")
 def download_pdf_report():
     base = Path(__file__).resolve().parent.parent.parent
-    pdf_path = base / "DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf"
+    pdf_path = base / "DUKAANDOST_AI_FINAL_TECHNICAL_REPORT.pdf"
+    if not pdf_path.exists():
+        pdf_path = base / "DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf"
     return FileResponse(
         path=str(pdf_path),
-        filename="DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf",
+        filename="DUKAANDOST_AI_FINAL_TECHNICAL_REPORT.pdf",
         media_type="application/pdf"
     )
