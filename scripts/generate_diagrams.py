@@ -6,6 +6,9 @@ import matplotlib.patches as patches
 
 os.makedirs('architecture', exist_ok=True)
 
+# Use Segoe UI which natively supports the Unicode Rupee sign ₹
+plt.rcParams['font.family'] = 'Segoe UI'
+
 DARK_BG = '#0B0F19'
 CARD_BG = '#111827'
 BORDER_COLOR = '#1F2937'
@@ -34,7 +37,7 @@ def draw_arrow(ax, x1, y1, x2, y2, color=CYAN, text=""):
     ax.annotate(
         text, xy=(x2, y2), xytext=(x1, y1),
         arrowprops=dict(facecolor=color, edgecolor=color, arrowstyle="-|>", lw=1.8, mutation_scale=15),
-        color=color, fontsize=8, fontweight='semibold', ha='center', va='center', zorder=4
+        color=color, fontsize=8, fontweight='bold', ha='center', va='center', zorder=4
     )
 
 # -------------------------------------------------------------
@@ -72,7 +75,7 @@ def generate_system_architecture():
 
     # 4. AI Provider Router & Tools
     ax.text(0.5, 3.5, "AI PROVIDER ROUTER & DETERMINISTIC ENGINE", color=AMBER, fontsize=11, fontweight='bold')
-    draw_box(ax, 0.5, 2.3, 4.0, 1.0, "Deterministic Local Engine", "Offline • Rs 0.00 • 1.2ms latency", EMERALD)
+    draw_box(ax, 0.5, 2.3, 4.0, 1.0, "Deterministic Local Engine", "Offline • ₹0.00 • 1.2ms latency", EMERALD)
     draw_box(ax, 4.8, 2.3, 4.2, 1.0, "Groq Cloud API (Primary)", "Llama 3.3 70B & Qwen 2.5 32B", AMBER)
     draw_box(ax, 9.5, 2.3, 4.0, 1.0, "Assistant Tools Engine", "9 Deterministic Python tools", CYAN)
 
@@ -82,7 +85,7 @@ def generate_system_architecture():
     draw_box(ax, 4.8, 0.4, 4.2, 1.0, "LangGraph Checkpoints", "checkpoints.db thread persistence", WHITE)
     draw_box(ax, 9.5, 0.4, 4.0, 1.0, "Immutable Audit Trail", "System health & guardrail log", WHITE)
 
-    # Vertical Connecting Arrows
+    # Connecting Flow
     draw_arrow(ax, 2.4, 8.0, 2.4, 7.1, CYAN)
     draw_arrow(ax, 6.9, 8.0, 6.9, 7.1, CYAN)
     draw_arrow(ax, 11.5, 8.0, 11.5, 7.1, CYAN)
@@ -101,7 +104,7 @@ def generate_system_architecture():
     plt.tight_layout()
     plt.savefig("architecture/dukaandost_system_architecture.png", dpi=300, facecolor=DARK_BG)
     plt.close()
-    print("Generated: architecture/dukaandost_system_architecture.png")
+    print("Generated: architecture/dukaandost_system_architecture.png with native Rupee")
 
 # -------------------------------------------------------------
 # 2. Multi-Agent Architecture
@@ -115,9 +118,9 @@ def generate_multi_agent_architecture():
 
     plt.title("DUKAANDOST AI 2.0 — SIX-AGENT MULTI-AGENT ORCHESTRATION", color=CYAN, fontsize=15, fontweight='bold', pad=15)
 
-    draw_box(ax, 4.0, 7.5, 5.0, 1.0, "Agent 1: Supervisor Agent", "Master Coordinator • Decomposes Goal • Fault Isolator", CYAN, fontsize=11)
+    draw_box(ax, 3.5, 7.5, 6.0, 1.0, "Agent 1: Supervisor Agent", "Master Coordinator • Decomposes Goal (₹8,000 -> ₹10,000)", CYAN, fontsize=11)
 
-    draw_box(ax, 0.5, 5.5, 3.6, 1.1, "Agent 2: Business Analyst", "Ledger retrieval • Net income gap\nAOV & category velocity", EMERALD)
+    draw_box(ax, 0.5, 5.5, 3.6, 1.1, "Agent 2: Business Analyst", "Ledger retrieval • Baseline: ₹8,000\nIncome Gap: ₹2,000 • AOV analysis", EMERALD)
     draw_box(ax, 4.7, 5.5, 3.6, 1.1, "Agent 3: Strategy Planner", "4-Pillar growth roadmap\nPrioritization & risk assessment", PURPLE)
     draw_box(ax, 8.9, 5.5, 3.6, 1.1, "Agent 4: Marketing Agent", "Cross-sell bundle proposals\nDormant customer reactivation", AMBER)
 
@@ -142,7 +145,7 @@ def generate_multi_agent_architecture():
     plt.tight_layout()
     plt.savefig("architecture/dukaandost_multi_agent_architecture.png", dpi=300, facecolor=DARK_BG)
     plt.close()
-    print("Generated: architecture/dukaandost_multi_agent_architecture.png")
+    print("Generated: architecture/dukaandost_multi_agent_architecture.png with native Rupee")
 
 # -------------------------------------------------------------
 # 3. LangGraph Workflow
@@ -156,12 +159,12 @@ def generate_langgraph_workflow():
 
     plt.title("DUKAANDOST AI 2.0 — LANGGRAPH STATEGRAPH EXECUTION LIFECYCLE", color=CYAN, fontsize=15, fontweight='bold', pad=15)
 
-    draw_box(ax, 0.5, 7.2, 3.8, 1.1, "1. goal_understanding_node", "Goal: Rs 8k -> Rs 10k Target\nInit state, thread & execution ID", CYAN)
-    draw_box(ax, 5.1, 7.2, 3.8, 1.1, "2. business_analysis_node", "Audit 320 txns & 32 products\nBaseline: Rs 8,000 | Gap: Rs 2,000", CYAN)
+    draw_box(ax, 0.5, 7.2, 3.8, 1.1, "1. goal_understanding_node", "Goal: ₹8,000 -> ₹10,000 Target\nInit state, thread & execution ID", CYAN)
+    draw_box(ax, 5.1, 7.2, 3.8, 1.1, "2. business_analysis_node", "Audit 320 txns & 32 products\nBaseline: ₹8,000 | Gap: ₹2,000", CYAN)
     draw_box(ax, 9.7, 7.2, 3.8, 1.1, "3. strategy_planning_node", "Formulate 4 growth pillars\nRank by expected income contribution", CYAN)
 
     draw_box(ax, 0.5, 4.6, 3.8, 1.1, "4. task_execution_node", "Iterate through planned tasks\nRoute to Marketing or Inventory", PURPLE)
-    draw_box(ax, 5.1, 4.6, 3.8, 1.1, "5. finance_validation_node", "Deterministic margin check\nEnforce profit & discount ceiling", RED)
+    draw_box(ax, 5.1, 4.6, 3.8, 1.1, "5. finance_validation_node", "Deterministic margin check\nEnforce profit & 15% discount ceiling", RED)
     draw_box(ax, 9.7, 4.6, 3.8, 1.1, "6. approval_interrupt_node", "Call interrupt() on high impact\nSave checkpoint to checkpoints.db", AMBER)
 
     draw_box(ax, 0.5, 1.8, 3.8, 1.1, "7. approval_resume_node", "Command(resume={'action': 'APPROVE'})\nExecute verified action atomically", EMERALD)
@@ -181,7 +184,7 @@ def generate_langgraph_workflow():
     plt.tight_layout()
     plt.savefig("architecture/dukaandost_langgraph_workflow.png", dpi=300, facecolor=DARK_BG)
     plt.close()
-    print("Generated: architecture/dukaandost_langgraph_workflow.png")
+    print("Generated: architecture/dukaandost_langgraph_workflow.png with native Rupee")
 
 # -------------------------------------------------------------
 # 4. Database ER Diagram
@@ -195,7 +198,7 @@ def generate_database_er():
 
     plt.title("DUKAANDOST AI 2.0 — MULTI-TENANT RELATIONAL DATABASE SCHEMA", color=CYAN, fontsize=15, fontweight='bold', pad=15)
 
-    draw_box(ax, 5.0, 7.2, 4.0, 1.2, "STORES", "store_id (PK), name, location\ninitial_income, target_income, current_income", CYAN)
+    draw_box(ax, 4.5, 7.2, 5.0, 1.2, "STORES", "store_id (PK), name, location\ninitial_income (₹8k), target_income (₹10k)", CYAN)
 
     draw_box(ax, 0.5, 5.0, 3.8, 1.2, "PRODUCTS", "id, store_id (FK), product_id (UK)\ncost_price, selling_price, stock, status", EMERALD)
     draw_box(ax, 5.0, 5.0, 4.0, 1.2, "CUSTOMERS", "id, store_id (FK), customer_id (UK)\nname, segment, lifetime_spend, last_order", EMERALD)
@@ -210,9 +213,9 @@ def generate_database_er():
     draw_box(ax, 9.7, 0.6, 3.8, 1.2, "AUDIT_LOGS", "id, store_id (FK), execution_id\nevent_type, agent_name, details, timestamp", WHITE)
 
     # Relationship Links
-    draw_arrow(ax, 6.0, 7.2, 2.4, 6.2, CYAN)
+    draw_arrow(ax, 5.5, 7.2, 2.4, 6.2, CYAN)
     draw_arrow(ax, 7.0, 7.2, 7.0, 6.2, CYAN)
-    draw_arrow(ax, 8.0, 7.2, 11.6, 6.2, CYAN)
+    draw_arrow(ax, 8.5, 7.2, 11.6, 6.2, CYAN)
 
     draw_arrow(ax, 7.0, 5.0, 7.0, 4.0, EMERALD)
     draw_arrow(ax, 2.4, 2.8, 2.4, 1.8, RED)
@@ -222,7 +225,7 @@ def generate_database_er():
     plt.tight_layout()
     plt.savefig("architecture/dukaandost_database_er.png", dpi=300, facecolor=DARK_BG)
     plt.close()
-    print("Generated: architecture/dukaandost_database_er.png")
+    print("Generated: architecture/dukaandost_database_er.png with native Rupee")
 
 # -------------------------------------------------------------
 # 5. Approval & Recovery Flow
@@ -238,9 +241,9 @@ def generate_approval_recovery():
 
     # Track 1: Failure & Rectification
     ax.text(0.5, 8.2, "TRACK 1: FINANCIAL GUARDRAIL AUTO-REJECTION & RECTIFICATION", color=RED, fontsize=11, fontweight='bold')
-    draw_box(ax, 0.5, 6.8, 3.8, 1.1, "1. Trigger Failure Condition", "Butter: Cost Rs 60.00 > Sell Rs 55.00\nLoss: -Rs 5.00/unit • Margin: -9.09%", RED)
+    draw_box(ax, 0.5, 6.8, 3.8, 1.1, "1. Trigger Failure Condition", "Butter: Cost ₹60.00 > Sell ₹55.00\nLoss: -₹5.00/unit • Margin: -9.09%", RED)
     draw_box(ax, 5.1, 6.8, 3.8, 1.1, "2. Finance Agent Halt", "Deterministic Gatekeeper rejection\nInsert FailureRecord (UNRESOLVED)", RED)
-    draw_box(ax, 9.7, 6.8, 3.8, 1.1, "3. Rectify Price & Revalidate", "Shopkeeper rectifies to Sell Rs 68.00\nMargin +11.8% • Status: RESOLVED", EMERALD)
+    draw_box(ax, 9.7, 6.8, 3.8, 1.1, "3. Rectify Price & Revalidate", "Shopkeeper rectifies to Sell ₹68.00\nMargin +11.8% • Status: RESOLVED", EMERALD)
 
     # Track 2: Human Approval & Resumption
     ax.text(0.5, 4.8, "TRACK 2: HUMAN-IN-THE-LOOP APPROVAL & GRAPH RESUMPTION", color=AMBER, fontsize=11, fontweight='bold')
@@ -264,7 +267,7 @@ def generate_approval_recovery():
     plt.tight_layout()
     plt.savefig("architecture/dukaandost_approval_recovery.png", dpi=300, facecolor=DARK_BG)
     plt.close()
-    print("Generated: architecture/dukaandost_approval_recovery.png")
+    print("Generated: architecture/dukaandost_approval_recovery.png with native Rupee")
 
 if __name__ == "__main__":
     generate_system_architecture()
@@ -272,4 +275,4 @@ if __name__ == "__main__":
     generate_langgraph_workflow()
     generate_database_er()
     generate_approval_recovery()
-    print("ALL 5 ARCHITECTURE DIAGRAMS GENERATED SUCCESSFULLY!")
+    print("ALL 5 ARCHITECTURE DIAGRAMS GENERATED WITH AUTHENTIC RUPEE SIGN!")
