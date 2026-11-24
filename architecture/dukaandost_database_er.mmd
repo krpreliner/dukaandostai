@@ -1,0 +1,125 @@
+erDiagram
+    STORES ||--o{ USERS : "employs"
+    STORES ||--o{ STORE_MEMBERS : "assigns roles"
+    USERS ||--o{ STORE_MEMBERS : "holds membership"
+    STORES ||--o{ PRODUCTS : "stocks catalog"
+    STORES ||--o{ CUSTOMERS : "serves"
+    STORES ||--o{ TRANSACTIONS : "records ledger"
+    CUSTOMERS ||--o{ TRANSACTIONS : "purchases"
+    STORES ||--o{ EXPENSES : "incurs recurring"
+    STORES ||--o{ EXECUTION_RECORDS : "runs autonomous cycles"
+    EXECUTION_RECORDS ||--o{ TASK_RECORDS : "decomposes into tasks"
+    EXECUTION_RECORDS ||--o{ APPROVAL_RECORDS : "pauses for sign-off"
+    EXECUTION_RECORDS ||--o{ FAILURE_RECORDS : "isolates violations"
+    STORES ||--o{ AUDIT_LOGS : "logs immutable trail"
+    STORES ||--o{ AI_PROVIDER_SETTINGS : "configures models"
+    STORES ||--o{ INTEGRATION_SETTINGS : "manages integrations"
+
+    STORES {
+        string store_id PK
+        string name
+        string location
+        string owner_name
+        float initial_net_income
+        float target_net_income
+        float current_net_income
+        float simulated_net_income
+    }
+
+    USERS {
+        int id PK
+        string email UK
+        string password_hash
+        string full_name
+        boolean is_active
+        datetime created_at
+    }
+
+    STORE_MEMBERS {
+        int id PK
+        int user_id FK
+        string store_id FK
+        string role "OWNER | MANAGER | STAFF | VIEWER"
+    }
+
+    PRODUCTS {
+        int id PK
+        string store_id FK
+        string product_id UK
+        string product_name
+        string category
+        float cost_price
+        float selling_price
+        int current_stock
+        int minimum_stock
+        string status "HEALTHY | LOW STOCK | NEGATIVE MARGIN"
+    }
+
+    CUSTOMERS {
+        int id PK
+        string store_id FK
+        string customer_id UK
+        string name
+        string phone
+        string segment "LOYAL | REGULAR | AT RISK | CHURNED"
+        float lifetime_spend
+        int total_orders
+        datetime last_purchase_date
+    }
+
+    TRANSACTIONS {
+        int id PK
+        string store_id FK
+        string transaction_id UK
+        string customer_id FK
+        float total_amount
+        float gross_profit
+        string payment_method
+        datetime timestamp
+    }
+
+    EXPENSES {
+        int id PK
+        string store_id FK
+        string category
+        float amount
+        string frequency
+        datetime date
+    }
+
+    FAILURE_RECORDS {
+        int id PK
+        string store_id FK
+        string execution_id FK
+        string task_id
+        string agent_name
+        string root_cause "NEGATIVE_GROSS_MARGIN_VIOLATION"
+        string error_description
+        string recovery_status "UNRESOLVED | RESOLVED"
+        int retry_count
+        datetime timestamp
+    }
+
+    APPROVAL_RECORDS {
+        int id PK
+        string store_id FK
+        string execution_id FK
+        string task_id
+        string action_description
+        float original_price
+        float proposed_price
+        float gross_margin_pct
+        string status "PENDING | APPROVED | REJECTED"
+        datetime created_at
+        datetime decided_at
+    }
+
+    AUDIT_LOGS {
+        int id PK
+        string store_id FK
+        string execution_id
+        string event_type
+        string agent_name
+        text details
+        datetime timestamp
+    }

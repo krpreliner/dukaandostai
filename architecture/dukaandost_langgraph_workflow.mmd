@@ -1,0 +1,40 @@
+graph TD
+    StartNode(["Start: Graph Invocation (Goal & Target)"]) --> GoalUnderstanding["Node: goal_understanding_node<br/>(Initialize State & Execution ID)"]
+    
+    GoalUnderstanding --> BusinessAnalysis["Node: business_analysis_node<br/>(Calculate Income Baseline: Rs 8,000 & Gap: Rs 2,000)"]
+    
+    BusinessAnalysis --> StrategyPlanning["Node: strategy_planning_node<br/>(Decompose into 4 Strategy Initiatives)"]
+    
+    StrategyPlanning --> TaskExecutionLoop["Node: task_execution_node<br/>(Iterate through Strategic Tasks)"]
+    
+    TaskExecutionLoop --> RouteAction{"Conditional Routing:<br/>Task Type & Validation Status"}
+    
+    RouteAction -- "Marketing Bundle" --> MarketingNode["Node: marketing_agent_node<br/>(Prepare Campaign & Pricing)"]
+    RouteAction -- "Inventory Stock" --> InventoryNode["Node: inventory_agent_node<br/>(Calculate Reorder / Liquidation)"]
+    
+    MarketingNode --> FinanceValidation["Node: finance_validation_node<br/>(Deterministic Margin & 15% Cap Check)"]
+    InventoryNode --> FinanceValidation
+    
+    FinanceValidation --> GatekeeperDecision{"Finance Gatekeeper:<br/>Pass or Fail?"}
+    
+    GatekeeperDecision -- "Failure (Negative Margin)" --> FaultHandling["Node: fault_handling_node<br/>(Persist FailureRecord, Halt Unsafe Task)"]
+    
+    GatekeeperDecision -- "Pass (Healthy Margin)" --> ApprovalCheck{"Requires Human Sign-Off?"}
+    
+    ApprovalCheck -- "Yes" --> ApprovalInterruptNode["Node: approval_interrupt_node<br/>(Call interrupt(): Save Checkpoint & Wait)"]
+    
+    ApprovalInterruptNode -.->|Thread Paused in checkpoints.db| HumanWait["Awaiting Human Decision via Approval API"]
+    
+    HumanWait -.->|POST /api/approvals/{id}/approve| CommandResume["Command(resume={'action': 'APPROVE'})"]
+    
+    CommandResume --> ApprovalResumeNode["Node: approval_resume_node<br/>(Verify Sign-off & Execute Action)"]
+    
+    ApprovalCheck -- "No" --> DirectExecuteNode["Node: direct_execute_node<br/>(Execute Safe Internal Action)"]
+    
+    FaultHandling --> EvaluationNode["Node: evaluation_node<br/>(Calculate Achieved vs Projected Net Income)"]
+    ApprovalResumeNode --> EvaluationNode
+    DirectExecuteNode --> EvaluationNode
+    
+    EvaluationNode --> LoopCheck{"More Tasks or Need Re-plan?"}
+    LoopCheck -- "Yes" --> TaskExecutionLoop
+    LoopCheck -- "No (Goal Achieved / Cycle Complete)" --> EndNode(["End: Workflow Completed & Execution Persisted"])

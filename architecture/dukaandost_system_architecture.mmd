@@ -1,0 +1,71 @@
+graph TB
+    subgraph ClientLayer ["Client Layer (Presentation & Voice)"]
+        Browser["React 18 + TypeScript SPA (Vite)"]
+        Dashboard["Full-Width Command Centre (14 Routes)"]
+        VoiceEngine["W3C Web Speech API (TTS & STT - Hindi/English)"]
+        Browser --> Dashboard
+        Browser --> VoiceEngine
+    end
+
+    subgraph APILayer ["FastAPI Gateway & Middleware Layer"]
+        FastAPIApp["FastAPI 0.115+ Application Server"]
+        CORSMiddleware["CORS & Origin Security Policy"]
+        TimingMiddleware["Process Time & Correlation ID Tracking"]
+        AuthMiddleware["JWT Authentication & RBAC (Argon2)"]
+        TenantFilter["Multi-Tenant Isolation Filter (X-Store-Id)"]
+        
+        FastAPIApp --> CORSMiddleware
+        FastAPIApp --> TimingMiddleware
+        FastAPIApp --> AuthMiddleware
+        FastAPIApp --> TenantFilter
+    end
+
+    subgraph ServiceLayer ["Core Autonomous Business Services"]
+        WorkerService["Worker & Orchestration Service"]
+        ApprovalService["Human-in-the-Loop Approval Service"]
+        FailureService["Safety Guardrails & Recovery Service"]
+        BriefingService["Bilingual Daily Briefing Engine"]
+        AssistantService["Conversational AI Partner Engine (9 Tools)"]
+        AnalyticsService["Deterministic Business Analytics Engine"]
+    end
+
+    subgraph AgentLayer ["Six Specialized AI Agents (LangGraph)"]
+        Supervisor["1. Supervisor Agent"]
+        BusinessAnalyst["2. Business Analyst Agent"]
+        StrategyPlanner["3. Strategy Planner Agent"]
+        MarketingAgent["4. Marketing Agent"]
+        InventoryAgent["5. Inventory Agent"]
+        FinanceAgent["6. Finance Agent (Deterministic Gatekeeper)"]
+    end
+
+    subgraph AIProviderLayer ["AI Provider Router & Zero-Cost Engine"]
+        AIRouter["Provider Router & Circuit Breaker"]
+        GroqProvider["Groq API (Llama 3.3 70B / Qwen 2.5 32B)"]
+        GeminiProvider["Google Gemini API Adapter (Optional)"]
+        OpenAIProvider["OpenAI API Adapter (Optional)"]
+        LocalEngine["Local Deterministic Engine (Offline / Rs 0.00)"]
+        
+        AIRouter --> GroqProvider
+        AIRouter --> GeminiProvider
+        AIRouter --> OpenAIProvider
+        AIRouter --> LocalEngine
+    end
+
+    subgraph DataLayer ["Persistence & Telemetry Layer"]
+        SQLAlchemy["SQLAlchemy 2.0 ORM Engine"]
+        SQLiteDB["SQLite App Database (dukaandost.db)"]
+        LangGraphCheckpoints["SQLite Thread Checkpointer (checkpoints.db)"]
+        AuditLog["Immutable Audit Log Ledger"]
+        Alembic["Alembic Schema Versioning"]
+        
+        SQLAlchemy --> SQLiteDB
+        SQLAlchemy --> AuditLog
+        SQLAlchemy --> Alembic
+    end
+
+    ClientLayer --> APILayer
+    APILayer --> ServiceLayer
+    ServiceLayer --> AgentLayer
+    AgentLayer --> AIProviderLayer
+    ServiceLayer --> DataLayer
+    AgentLayer --> DataLayer

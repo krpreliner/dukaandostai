@@ -1,0 +1,48 @@
+sequenceDiagram
+    autonumber
+    actor SharmaJi as Shopkeeper (Sharma Ji)
+    participant UI as Web Dashboard
+    participant API as FastAPI Gateway
+    participant Finance as Finance Agent (Gatekeeper)
+    participant Supervisor as Supervisor Agent
+    participant LangGraph as LangGraph Engine
+    participant DB as SQLite / PostgreSQL
+
+    Note over SharmaJi,DB: SCENARIO 1: DEMO FAILURE & FAULT ISOLATION
+    SharmaJi->>UI: Clicks "Demo Failure" Button
+    UI->>API: POST /api/demo/trigger-failure
+    API->>DB: Set Amul Butter (Cost: Rs 60.00, Sell: Rs 55.00)
+    API->>Finance: validate_task_finance(TASK_PROMO_PROD003)
+    Finance-->>API: REJECTED: Negative Gross Margin (-9.09%, -Rs 5.00/unit)
+    API->>DB: Insert FailureRecord (UNRESOLVED, TASK_PROMO_PROD003)
+    API->>DB: Insert AuditLog (FINANCIAL_GUARDRAIL_VIOLATION)
+    API-->>UI: Return 200 OK (Failure Details & Auto-Nav to /failures)
+    UI-->>SharmaJi: Displays Negative Margin Violation in Table
+
+    Note over SharmaJi,DB: SCENARIO 2: GENUINE PRICE RECTIFICATION & REVALIDATION
+    SharmaJi->>UI: Clicks "Rectify Price & Revalidate"
+    UI->>SharmaJi: Displays Rectification Modal (Cost: Rs 60, Proposed Sell: Rs 68)
+    SharmaJi->>UI: Clicks "Confirm & Revalidate"
+    UI->>API: POST /api/failures/1/rectify (Cost: 60, Sell: 68)
+    API->>Finance: Re-validate Proposed Price (Cost: 60, Sell: 68)
+    Finance-->>API: VALIDATED: Positive Margin (+11.76%, Unit Profit: +Rs 8.00)
+    API->>DB: Update Product (status: HEALTHY, sell: 68.00)
+    API->>DB: Update FailureRecord (recovery_status: RESOLVED)
+    API->>DB: Insert AuditLog (PRICE_RECTIFICATION_VALIDATED)
+    API-->>UI: Return 200 OK (Resolved Status)
+    UI-->>SharmaJi: Table row updates with green "Rectified" badge
+
+    Note over SharmaJi,DB: SCENARIO 3: HUMAN APPROVAL & GRAPH RESUMPTION
+    Supervisor->>LangGraph: High-Impact Promotional Campaign requires Sign-off
+    LangGraph->>LangGraph: interrupt() - Checkpoint saved to checkpoints.db
+    LangGraph->>DB: Insert ApprovalRecord (status: PENDING)
+    UI->>API: GET /api/approvals/pending
+    API-->>UI: Pending Approval Card Stack
+    SharmaJi->>UI: Reviews Terms & Clicks "Approve"
+    UI->>API: POST /api/approvals/{task_id}/approve
+    API->>DB: Update ApprovalRecord (status: APPROVED)
+    API->>DB: Insert AuditLog (HUMAN_APPROVAL_DECISION)
+    API->>LangGraph: Command(resume={'action': 'APPROVE'})
+    LangGraph->>LangGraph: Resume Thread & Execute Task
+    API-->>UI: Return Workflow Resumed
+    UI-->>SharmaJi: Execution History updates with live results

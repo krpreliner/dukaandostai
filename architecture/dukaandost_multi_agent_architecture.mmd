@@ -1,0 +1,35 @@
+graph TD
+    GoalInput["Store Growth Goal: Increase Net Income Rs 8k to Rs 10k"] --> Supervisor
+
+    subgraph MultiAgentSystem ["DukaanDost AI Multi-Agent Orchestration"]
+        Supervisor["Agent 1: Supervisor Agent<br/>(Master Coordinator & Fault Isolator)"]
+        
+        BusinessAnalyst["Agent 2: Business Analyst Agent<br/>(Historical Ledger & Income Gap Retrieval)"]
+        StrategyPlanner["Agent 3: Strategy Planner Agent<br/>(4-Pillar Initiative Formulation & Prioritization)"]
+        MarketingAgent["Agent 4: Marketing Agent<br/>(Promotional Bundles & Customer Reactivation)"]
+        InventoryAgent["Agent 5: Inventory Agent<br/>(Stockout Replenishment & Near-Expiry Clearance)"]
+        FinanceAgent["Agent 6: Finance Agent<br/>(Deterministic Gatekeeper & Margin Validator)"]
+        
+        Supervisor -->|Delegate Analysis| BusinessAnalyst
+        BusinessAnalyst -->|Baseline Income & Opportunities| Supervisor
+        Supervisor -->|Request Roadmap Formulation| StrategyPlanner
+        StrategyPlanner -->|Draft Bundling Initiatives| MarketingAgent
+        StrategyPlanner -->|Draft Reorder & Clearance Tasks| InventoryAgent
+        
+        MarketingAgent -->|Proposed Promotional Bundles| FinanceAgent
+        InventoryAgent -->|Proposed Inventory Tasks| FinanceAgent
+        
+        FinanceAgent -->|Margin & Policy Audit| DecisionPoint{"Is Gross Margin Positive & Policy Compliant?"}
+    end
+
+    DecisionPoint -- "No (Negative Margin / Violation)" --> FaultIsolation["Supervisor Fault Isolation<br/>(Log FailureRecord & Halt Execution)"]
+    DecisionPoint -- "Yes (Healthy Margin > 5%)" --> RiskCheck{"High Impact / Financial Risk?"}
+
+    RiskCheck -- "Yes (Sign-Off Required)" --> ApprovalInterrupt["LangGraph Interrupt<br/>(Pause Workflow for Human Sign-Off)"]
+    RiskCheck -- "No (Low Risk)" --> AutonomousExecution["Autonomous Execution<br/>(Update Inventory / Draft Action)"]
+
+    ApprovalInterrupt --> HumanReview["Shopkeeper (Sharma Ji)<br/>Approval Centre"]
+    HumanReview -- "Approved" --> ResumeWorkflow["LangGraph Command(resume=APPROVED)"] --> AutonomousExecution
+    HumanReview -- "Rejected" --> CancelTask["Cancel Action & Record Rejection Audit"]
+
+    AutonomousExecution --> MeasureLearn["Evaluation Service<br/>(Measure Impact vs Target Gap & Re-plan)"]
