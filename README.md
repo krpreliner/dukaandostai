@@ -46,7 +46,7 @@ Small Indian neighbourhood kirana stores operate in intensely competitive enviro
 | **Backend** | Python 3.11+, FastAPI, LangGraph, Pydantic v2, SQLAlchemy 2.0, Alembic, Pandas, PyJWT, bcrypt, psutil |
 | **Persistence** | SQLite (application data + `langgraph-checkpoint-sqlite` checkpoints) / PostgreSQL (production scaling) |
 | **AI Intelligence** | Deterministic Local Engine (1.2ms, ₹0 cost), OpenAI (`gpt-4o-mini`), Google Gemini (`gemini-2.0-flash`), Groq (`llama-3.3-70b`), Ollama (`llama3`) |
-| **DevOps & QA** | Docker, Docker Compose, Nginx, GitHub Actions CI, Pytest (40 tests passing in 3.89s) |
+| **DevOps & QA** | Docker, Docker Compose, Nginx, GitHub Actions CI, Pytest (56 comprehensive tests passing 100%) |
 
 ---
 

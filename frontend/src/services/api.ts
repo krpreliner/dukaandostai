@@ -173,6 +173,14 @@ export const resolveFailure = async (failureId: number) => {
   return res.data;
 };
 
+export const rectifyFailurePrice = async (
+  failureId: number,
+  data?: { product_id?: string; new_cost_price?: number; new_selling_price?: number }
+) => {
+  const res = await api.post(`/failures/${failureId}/rectify`, data || { new_cost_price: 60.0, new_selling_price: 68.0 });
+  return res.data;
+};
+
 export const resolveAllFailures = async () => {
   const res = await api.post('/failures/resolve-all');
   return res.data;

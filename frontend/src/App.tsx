@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Sidebar } from './components/layout/Sidebar';
@@ -43,6 +43,7 @@ const routeTitles: Record<string, string> = {
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const pageTitle = routeTitles[location.pathname] || 'DukaanDost AI';
   const { user } = useAuth();
 
@@ -86,7 +87,7 @@ const AppContent: React.FC = () => {
     try {
       await triggerDemoFailure();
       await refreshGlobalState();
-      alert('Simulated failure condition activated: Butter cost price ₹60 exceeds selling price ₹55.');
+      navigate('/failures');
     } catch (err) {
       console.error(err);
     }

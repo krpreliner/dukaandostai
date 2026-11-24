@@ -91,6 +91,15 @@ class ApprovalService:
         approval_rec.decided_at = datetime.now(timezone.utc)
         self.db.commit()
 
+        # Log audit record
+        self.repo.log_audit(
+            event_type="HUMAN_APPROVAL_DECISION",
+            agent_name="Shopkeeper / Human Owner",
+            details=f"Task '{task_id}' was {approval_rec.status} by human management.",
+            execution_id=exec_id,
+            store_id=getattr(approval_rec, "store_id", "STORE_001")
+        )
+
         # Build graph and resume thread via Command
         graph = build_dukaandost_graph()
         config = {"configurable": {"thread_id": thread_id}}

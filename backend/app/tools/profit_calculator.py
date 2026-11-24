@@ -37,10 +37,10 @@ class ProfitCalculator:
         is_valid = True
         reasons = []
 
-        if proposed_price < cost_price:
+        if proposed_price <= cost_price:
             is_valid = False
             reasons.append(
-                f"Negative gross margin! Proposed price ₹{proposed_price:.2f} is below cost price ₹{cost_price:.2f} (Loss: -₹{abs(unit_profit):.2f}/unit)."
+                f"Negative gross margin! Proposed price ₹{proposed_price:.2f} is at or below cost price ₹{cost_price:.2f} (Loss / Non-positive: ₹{unit_profit:.2f}/unit)."
             )
 
         if discount_pct > max_discount_pct:
