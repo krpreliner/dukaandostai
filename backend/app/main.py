@@ -93,13 +93,37 @@ def legacy_health_check():
     }
 
 @app.get("/api/report/download")
-def download_pdf_report():
+@app.get("/api/report/technical")
+def download_technical_report():
     base = Path(__file__).resolve().parent.parent.parent
     pdf_path = base / "DUKAANDOST_AI_FINAL_TECHNICAL_REPORT.pdf"
     if not pdf_path.exists():
-        pdf_path = base / "DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf"
+        pdf_path = base / "docs" / "DUKAANDOST_AI_FINAL_TECHNICAL_REPORT.pdf"
     return FileResponse(
         path=str(pdf_path),
         filename="DUKAANDOST_AI_FINAL_TECHNICAL_REPORT.pdf",
         media_type="application/pdf"
+    )
+
+@app.get("/api/report/final")
+@app.get("/api/report/engineering")
+def download_final_report():
+    base = Path(__file__).resolve().parent.parent.parent
+    pdf_path = base / "DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf"
+    if not pdf_path.exists():
+        pdf_path = base / "docs" / "DUKAANDOST_AI_COMPLETE_ENGINEERING_REPORT.pdf"
+    return FileResponse(
+        path=str(pdf_path),
+        filename="DUKAANDOST_AI_FINAL_REPORT.pdf",
+        media_type="application/pdf"
+    )
+
+@app.get("/api/report/diagram")
+def get_architecture_diagram():
+    base = Path(__file__).resolve().parent.parent.parent
+    img_path = base / "architecture" / "dukaandost_system_architecture.png"
+    return FileResponse(
+        path=str(img_path),
+        filename="dukaandost_system_architecture.png",
+        media_type="image/png"
     )
